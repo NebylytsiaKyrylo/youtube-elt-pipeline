@@ -2411,6 +2411,7 @@ dependencies = [
 dev = [
     { name = "apache-airflow" },
     { name = "boto3-stubs" },
+    { name = "botocore" },
     { name = "ipykernel" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -2433,6 +2434,7 @@ requires-dist = [
 dev = [
     { name = "apache-airflow", specifier = "==3.2.0" },
     { name = "boto3-stubs", specifier = ">=1.42.89" },
+    { name = "botocore", specifier = ">=1.42.89" },
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
