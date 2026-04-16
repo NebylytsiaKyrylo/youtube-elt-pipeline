@@ -5,6 +5,7 @@ import logging
 from datetime import date
 
 import boto3
+from botocore.exceptions import ClientError
 
 from src.youtube.client import EnrichedVideoDetails
 
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class RawWriter:
-    """Uploads extracted YouTube data as JSON to MinIO."""
+    """Uploads and downloads YouTube data JSON files from MinIO."""
 
     def __init__(
             self,
@@ -37,20 +38,35 @@ class RawWriter:
             aws_secret_access_key=secret_key,
         )
 
+    @staticmethod
+    def _build_key(ds: date) -> str:
+        """Build the S3 object key for a given extraction date.
+
+        The date is used both as a folder prefix (virtual partition) and in the
+        filename — standard data lake pattern for day-based partitioning.
+
+        Args:
+            ds: Extraction date (e.g. 2026-04-16)
+
+        Returns:
+            Object key (e.g. "2026-04-16/youtube_data_2026-04-16.json")
+        """
+        return f"{ds}/youtube_data_{ds}.json"
+
     def write(self, videos: list[EnrichedVideoDetails], ds: date) -> str:
         """Serialize and upload videos to MinIO as a single JSON file.
 
         Args:
             videos: List of enriched video details
-            ds: Extraction date used as the object key (e.g. 2026-04-15)
+            ds: Extraction date used to build the object key
 
         Returns:
-            Object key stored in MinIO (e.g. "2026-04-15.json")
+            Object key stored in MinIO (e.g. "2026-04-16/youtube_data_2026-04-16.json")
 
         Raises:
             botocore.exceptions.ClientError: If upload to MinIO fails
         """
-        key = f"youtube_data_{ds}.json"
+        key = self._build_key(ds)
         payload = json.dumps(videos, ensure_ascii=False, indent=2)
 
         self.s3.put_object(
@@ -61,3 +77,28 @@ class RawWriter:
         )
         logger.info("Uploaded %d videos → s3://%s/%s", len(videos), self.bucket, key)
         return key
+
+    def read(self, ds: date) -> list[dict]:
+        """Download and deserialize a JSON file from MinIO.
+
+        Args:
+            ds: Extraction date of the file to read
+
+        Returns:
+            List of video dicts
+
+        Raises:
+            FileNotFoundError: If no file exists for the given date
+            botocore.exceptions.ClientError: For any other S3 error
+        """
+        key = self._build_key(ds)
+        try:
+            response = self.s3.get_object(Bucket=self.bucket, Key=key)
+            body = response["Body"].read().decode("utf-8")
+            data = json.loads(body)
+            logger.info("Downloaded %d records from s3://%s/%s", len(data), self.bucket, key)
+            return data
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchKey":
+                raise FileNotFoundError(f"s3://{self.bucket}/{key} not found")
+            raise
