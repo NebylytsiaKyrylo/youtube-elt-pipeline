@@ -7,29 +7,15 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+logger = logging.getLogger(__name__)
+
 BASE_URL: str = "https://www.googleapis.com/youtube/v3"
 TIMEOUT: int = 30  # seconds
 MAX_RESULTS: int = 50
 
 
 class VideoDetails(TypedDict):
-    """
-    Represents details of a video in a structured format.
-
-    This class provides a typed dictionary structure for storing information
-    about a video. The details include the video ID, title, publication date,
-    duration in ISO 8601 format, and optional metrics such as view count, like
-    count, and comment count.
-
-    Attributes:
-        video_id: Unique identifier for the video.
-        title: Title of the video.
-        published_at: Publication date and time of the video.
-        duration_iso: Duration of the video in ISO 8601 format.
-        view_count: Number of views the video has received. Optional.
-        like_count: Number of likes the video has received. Optional.
-        comment_count: Number of comments the video has received. Optional.
-    """
+    """Details of a single YouTube video as returned by the API."""
     video_id: str
     title: str
     published_at: str
@@ -43,23 +29,11 @@ class EnrichedVideoDetails(VideoDetails):
     """Video details enriched with channel metadata."""
     channel_id: str
     channel_name: str
+    channel_start_date: str
 
 
 class ChannelInfo(TypedDict):
-    """
-    Represents metadata information about a channel.
-
-    This class is a specialized TypedDict that contains metadata related to
-    a channel such as its unique identifier, name, creation date, and associated
-    uploads playlist. It is primarily used for storing and transferring structured
-    channel-related information.
-
-    Attributes:
-        channel_id (str): A string representing the unique identifier of the channel.
-        channel_name (str): The name of the channel.
-        channel_start_date (str): The channel's start date in ISO 8601 datetime format.
-        uploads_playlist_id (str): The unique identifier for the channel's uploads playlist.
-    """
+    """Channel metadata returned by the YouTube channels endpoint."""
     channel_id: str
     channel_name: str
     channel_start_date: str  # ISO 8601 datetime
@@ -94,8 +68,6 @@ class YouTubeClient:
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("https://", adapter)
-
-        self.logger = logging.getLogger(__name__)
 
     def get_channel_info(self, channel_id: str) -> ChannelInfo:
         """Fetch channel info (ID, name, creation date, upload playlist).
@@ -134,7 +106,7 @@ class YouTubeClient:
         channel_start_date = item["snippet"]["publishedAt"]
         uploads_playlist_id = item["contentDetails"]["relatedPlaylists"]["uploads"]
 
-        self.logger.info(f"Channel found: {channel_name} ({channel_id})")
+        logger.info(f"Channel found: {channel_name} ({channel_id})")
 
         return {
             "channel_id": channel_id,
@@ -182,7 +154,7 @@ class YouTubeClient:
             if not next_page_token:
                 break
 
-        self.logger.info(f"Found {len(video_ids)} video IDs in playlist {playlist_id}")
+        logger.info(f"Found {len(video_ids)} video IDs in playlist {playlist_id}")
         return video_ids
 
     def get_videos_details(self, video_ids: list[str]) -> list[VideoDetails]:
@@ -227,7 +199,7 @@ class YouTubeClient:
                 }
                 videos.append(video)
 
-        self.logger.info(f"Fetched details for {len(videos)} videos")
+        logger.info(f"Fetched details for {len(videos)} videos")
         return videos
 
     @staticmethod
