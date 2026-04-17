@@ -26,8 +26,8 @@ class RawStorage:
 
         Args:
             endpoint_url: MinIO endpoint (e.g. "http://localhost:9000")
-            access_key: MinIO root user (MINIO_ROOT_USER)
-            secret_key: MinIO root password (MINIO_ROOT_PASSWORD)
+            access_key: MinIO access key (MINIO_ACCESS_KEY)
+            secret_key: MinIO secret key (MINIO_SECRET_KEY)
             bucket: Target bucket name (e.g. "youtube-raw")
         """
         self.bucket = bucket
@@ -42,14 +42,11 @@ class RawStorage:
     def _build_key(ds: date) -> str:
         """Build the S3 object key for a given extraction date.
 
-        The date is used both as a folder prefix (virtual partition) and in the
-        filename — standard data lake pattern for day-based partitioning.
-
         Args:
             ds: Extraction date (e.g. 2026-04-16)
 
         Returns:
-            Object key (e.g. "2026-04-16/youtube_data_2026-04-16.json")
+            Object key (e.g. "youtube_data_2026-04-16.json")
         """
         return f"youtube_data_{ds}.json"
 
@@ -61,7 +58,7 @@ class RawStorage:
             ds: Extraction date used to build the object key
 
         Returns:
-            Object key stored in MinIO (e.g. "2026-04-16/youtube_data_2026-04-16.json")
+            Object key stored in MinIO (e.g. "youtube_data_2026-04-16.json")
 
         Raises:
             botocore.exceptions.ClientError: If upload to MinIO fails
