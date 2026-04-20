@@ -6,7 +6,7 @@ aggregated_channel_active AS (
 
     SELECT
         dc.channel_key,
-        dc.channel_name AS channel_title,
+        dc.channel_name,
         EXTRACT(YEAR FROM AGE(CURRENT_DATE, dc.channel_start_date)) AS channel_age_years,
         MAX(dv.published_at) AS last_published,
         COUNT(dv.video_id) AS total_videos,
@@ -29,7 +29,7 @@ aggregated_channel_active AS (
 )
 
 SELECT
-    channel_title,
+    channel_name,
     channel_age_years,
     last_published,
     total_videos,
