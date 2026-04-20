@@ -59,7 +59,7 @@ class YouTubeClient:
         self.api_key = api_key
         self.session = requests.Session()
 
-        # Configure retry strategy: 3 retries with exponential backoff
+        # Retry strategy: 3 retries with exponential backoff
         # Retry on: rate limit (429), server errors (500, 502, 503, 504)
         retry_strategy = Retry(
             total=3,
