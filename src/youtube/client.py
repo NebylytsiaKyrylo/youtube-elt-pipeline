@@ -29,6 +29,7 @@ class EnrichedVideoDetails(VideoDetails):
     """Video details enriched with channel metadata."""
     channel_id: str
     channel_name: str
+    subscribers_count: str
     channel_start_date: str
 
 
@@ -38,6 +39,7 @@ class ChannelInfo(TypedDict):
     channel_name: str
     channel_start_date: str  # ISO 8601 datetime
     uploads_playlist_id: str
+    subscribers_count: str
 
 
 class YouTubeClient:
@@ -88,7 +90,7 @@ class YouTubeClient:
 
         url = f"{BASE_URL}/channels"
         params = {
-            "part": "snippet,contentDetails",
+            "part": "snippet,contentDetails,statistics",
             "id": channel_id,
             "key": self.api_key,
         }
@@ -105,6 +107,7 @@ class YouTubeClient:
         channel_name = item["snippet"]["title"]
         channel_start_date = item["snippet"]["publishedAt"]
         uploads_playlist_id = item["contentDetails"]["relatedPlaylists"]["uploads"]
+        subscribers_count = item["statistics"]["subscriberCount"]
 
         logger.info(f"Channel found: {channel_name} ({channel_id})")
 
@@ -113,6 +116,7 @@ class YouTubeClient:
             "channel_name": channel_name,
             "channel_start_date": channel_start_date,
             "uploads_playlist_id": uploads_playlist_id,
+            "subscribers_count": subscribers_count
         }
 
     def get_video_ids(self, playlist_id: str) -> list[str]:

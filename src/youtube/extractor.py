@@ -40,6 +40,7 @@ def extract_channel(client: YouTubeClient, channel_id: str) -> list[EnrichedVide
             video["channel_id"] = channel_info["channel_id"]
             video["channel_name"] = channel_info["channel_name"]
             video["channel_start_date"] = channel_info["channel_start_date"]
+            video["subscribers_count"] = channel_info["subscribers_count"]
 
         logger.info(
             f"Extracted {len(videos)} videos from channel_id: {channel_id} "
