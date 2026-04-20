@@ -2,17 +2,20 @@
 INSERT INTO core.dim_channel (
     channel_id,
     channel_name,
+    subscribers_count,
     channel_start_date
 )
 -- DISTINCT: staging has one row per video, multiple rows per channel
 SELECT DISTINCT
     channel_id::VARCHAR(24),
     channel_name,
+    subscribers_count::BIGINT,
     channel_start_date::DATE
 FROM staging.yt_video_snapshot
 ON CONFLICT (channel_id) DO UPDATE
     SET
         channel_name = excluded.channel_name,
+        subscribers_count = excluded.subscribers_count,
         updated_at = NOW();
 
 -- 2. dim_video: FK in dim_video references channel_key

@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS core.dim_channel (
     channel_key SERIAL PRIMARY KEY,
     channel_id VARCHAR(24) NOT NULL UNIQUE,
     channel_name TEXT,
+    subscribers_count BIGINT,
     channel_start_date DATE,
     loaded_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
