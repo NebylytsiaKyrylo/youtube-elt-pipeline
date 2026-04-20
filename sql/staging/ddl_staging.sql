@@ -16,7 +16,5 @@ CREATE TABLE IF NOT EXISTS staging.yt_video_snapshot (
     duration_iso TEXT,
     view_count TEXT,
     like_count TEXT,
-    comment_count TEXT,
-    ingestion_ts TIMESTAMPTZ NOT NULL,
-    run_id TEXT NOT NULL
+    comment_count TEXT
 );
