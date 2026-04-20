@@ -5,7 +5,7 @@ WITH
         (
             SELECT
                 dc.channel_key,
-                channel_name,
+                dc.channel_name,
                 SUM(ds.video_views) AS total_views,
                 SUM(ds.video_likes) AS total_likes
             FROM core.fct_video_daily_snapshot AS ds
@@ -15,7 +15,7 @@ WITH
                 ds.snapshot_date = CURRENT_DATE
             GROUP BY
                 dc.channel_key,
-                channel_name
+                dc.channel_name
         )
 SELECT
     channel_name,
