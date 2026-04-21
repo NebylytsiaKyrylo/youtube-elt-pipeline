@@ -1,5 +1,3 @@
-# This file contains the logic for connecting to the database
-
 from sqlalchemy import Engine, create_engine
 
 
