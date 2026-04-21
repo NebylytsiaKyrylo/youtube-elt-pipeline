@@ -30,13 +30,13 @@ dev = [
 
 [tool.sqlfluff.core]
 dialect = "postgres"
-max_line_length = 100
+max_line_length = 120
 
 
 # RUFF
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py312"
 indent-width = 4
 
