@@ -3,7 +3,7 @@ CREATE TABLE marts.mart_channel_top_subscribers AS
 SELECT
     dc.channel_name,
     dc.subscribers_count,
-    SUM(video_views) AS total_views,
+    SUM(ds.video_views) AS total_views,
     COUNT(ds.video_key) AS total_videos
 FROM core.fct_video_daily_snapshot AS ds
 INNER JOIN core.dim_channel AS dc
