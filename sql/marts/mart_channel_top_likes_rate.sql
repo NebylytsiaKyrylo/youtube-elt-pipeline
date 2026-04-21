@@ -22,6 +22,6 @@ SELECT
     channel_name,
     total_views,
     total_likes,
-    ROUND(total_likes::numeric / total_views, 3) AS likes_rate
+    ROUND(total_likes::NUMERIC / total_views, 3) AS likes_rate
 FROM aggregated_channels
 ORDER BY likes_rate DESC;
