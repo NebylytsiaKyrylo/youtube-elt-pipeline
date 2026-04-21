@@ -19,8 +19,13 @@ x-airflow-env: &airflow-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__TEST_CONNECTION: "Enabled"
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: "admin:Admin"
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: "http://airflow-api-server:8080/execution/"
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_API_AUTH_JWT_SECRET}
+    AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_SIZE: "20"
+    AIRFLOW__DATABASE__SQL_ALCHEMY_MAX_OVERFLOW: "20"
     PYTHONPATH: /opt/airflow/src
     AIRFLOW_HOME: /opt/airflow
 
@@ -103,6 +108,12 @@ services:
     container_name: airflow_scheduler
     restart: unless-stopped
     command: airflow scheduler
+
+  airflow-dag-processor:
+    <<: [ *airflow-build, *airflow-env, *airflow-depends-on, *airflow-volumes ]
+    container_name: airflow_dag_processor
+    restart: unless-stopped
+    command: airflow dag-processor
 
   minio:
     image: minio/minio:latest
