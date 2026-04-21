@@ -16,6 +16,7 @@ WITH
             GROUP BY
                 dc.channel_key,
                 dc.channel_name
+            HAVING sum(ds.video_views) >= 10000
         )
 SELECT
     channel_name,
