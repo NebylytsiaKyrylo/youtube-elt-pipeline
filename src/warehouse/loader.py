@@ -3,7 +3,6 @@ import logging
 import pandas as pd
 from sqlalchemy import Engine, text
 
-from src.youtube.client import EnrichedVideoDetails
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +27,6 @@ def load_staging_batch(df: pd.DataFrame, engine: Engine) -> int:
     return len(df)
 
 
-def load_raw_to_staging(raw_data: list[EnrichedVideoDetails], engine: Engine) -> int:
+def load_raw_to_staging(raw_data: list[dict], engine: Engine) -> int:
     df = pd.DataFrame(raw_data)
     return load_staging_batch(df, engine)
