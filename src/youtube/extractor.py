@@ -2,7 +2,7 @@
 
 import logging
 
-from src.youtube.client import YouTubeClient, EnrichedVideoDetails
+from youtube.client import YouTubeClient, EnrichedVideoDetails
 
 logger = logging.getLogger(__name__)
 
