@@ -32,6 +32,34 @@ dev = [
 dialect = "postgres"
 max_line_length = 120
 
+[tool.sqlfluff.indentation]
+indent_unit = "space"
+tab_space_size = 4
+
+# Capitalisation — 4 catégories, toutes en UPPER
+[tool.sqlfluff.rules.capitalisation.keywords]
+capitalisation_policy = "upper"   # SELECT, FROM, WHERE, GROUP BY, HAVING...
+
+[tool.sqlfluff.rules.capitalisation.functions]
+capitalisation_policy = "upper"
+extended_capitalisation_policy = "upper"   # SUM, ROUND, COUNT, MAX, EXTRACT...
+
+[tool.sqlfluff.rules.capitalisation.literals]
+capitalisation_policy = "upper"   # NULL, TRUE, FALSE
+
+[tool.sqlfluff.rules.capitalisation.types]
+capitalisation_policy = "upper"
+extended_capitalisation_policy = "upper"   # NUMERIC, INT, DATE, INTERVAL...
+
+[tool.sqlfluff.rules.aliasing.table]
+aliasing = "explicit"             # INNER JOIN core.dim_channel AS dc
+
+[tool.sqlfluff.rules.layout.commas]
+comma_style = "trailing"          # channel_name,\n total_views
+
+[tool.sqlfluff.rules.structure.else_null]
+exemptions = []                   # ST01 : CASE WHEN ... END  (without ELSE NULL)
+
 
 # RUFF
 
