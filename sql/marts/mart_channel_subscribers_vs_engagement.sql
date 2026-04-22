@@ -14,8 +14,8 @@ INNER JOIN
     core.dim_video AS dv
     ON ds.video_key = dv.video_key
 WHERE
-    ds.snapshot_date = CURRENT_DATE
+    ds.snapshot_date = '{{ ds }}'::DATE
 GROUP BY dc.channel_name, dc.subscribers_count
 HAVING
-    MAX(dv.published_at) > CURRENT_DATE - 30 * INTERVAL '1 day'
+    MAX(dv.published_at) > '{{ ds }}'::DATE - 30 * INTERVAL '1 day'
 ORDER BY engagement_per_subscriber DESC;

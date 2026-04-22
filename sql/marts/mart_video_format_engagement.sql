@@ -15,6 +15,6 @@ FROM core.fct_video_daily_snapshot AS ds
 INNER JOIN core.dim_video AS dv
     ON ds.video_key = dv.video_key
 WHERE
-    ds.snapshot_date = CURRENT_DATE
+    ds.snapshot_date = '{{ ds }}'::DATE
 GROUP BY duration_bucket
 ORDER BY avg_engagement_score DESC;

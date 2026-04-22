@@ -18,12 +18,12 @@ aggregated_channel_active AS (
     INNER JOIN core.dim_video AS dv
         ON ds.video_key = dv.video_key
     WHERE
-        ds.snapshot_date = CURRENT_DATE
+        ds.snapshot_date = '{{ ds }}'::DATE
     GROUP BY
         dc.channel_key,
         dc.channel_name
     HAVING
-        MAX(dv.published_at) > CURRENT_DATE - 30 * INTERVAL '1 day'
+        MAX(dv.published_at) > '{{ ds }}'::DATE - 30 * INTERVAL '1 day'
 )
 
 SELECT

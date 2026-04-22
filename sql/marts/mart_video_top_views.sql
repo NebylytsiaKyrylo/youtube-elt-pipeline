@@ -15,7 +15,7 @@ ranked_videos AS (
     INNER JOIN core.dim_channel AS dc
         ON ds.channel_key = dc.channel_key
     WHERE
-        ds.snapshot_date = CURRENT_DATE
+        ds.snapshot_date = '{{ ds }}'::DATE
 )
 
 SELECT

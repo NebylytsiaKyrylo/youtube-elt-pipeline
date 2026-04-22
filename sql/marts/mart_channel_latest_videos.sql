@@ -16,7 +16,7 @@ SELECT
     channel_name,
     title AS latest_title,
     latest_published_at,
-    CURRENT_DATE - latest_published_at::DATE AS days_since_last_video
+    '{{ ds }}'::DATE - latest_published_at::DATE AS days_since_last_video
 FROM latest_video_per_channel
 WHERE
     published_at = latest_published_at

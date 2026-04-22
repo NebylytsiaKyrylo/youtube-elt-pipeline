@@ -7,7 +7,7 @@ aggregated_channel_active AS (
     SELECT
         dc.channel_key,
         dc.channel_name,
-        EXTRACT(YEAR FROM AGE(CURRENT_DATE, dc.channel_start_date)) AS channel_age_years,
+        EXTRACT(YEAR FROM AGE('{{ ds }}'::DATE, dc.channel_start_date)) AS channel_age_years,
         MAX(dv.published_at) AS last_published,
         COUNT(dv.video_id) AS total_videos,
         SUM(ds.video_views) AS total_views,
@@ -19,13 +19,13 @@ aggregated_channel_active AS (
     INNER JOIN core.dim_video AS dv
         ON ds.video_key = dv.video_key
     WHERE
-        ds.snapshot_date = CURRENT_DATE
+        ds.snapshot_date = '{{ ds }}'::DATE
     GROUP BY
         dc.channel_key,
         dc.channel_name,
         channel_age_years
     HAVING
-        MAX(dv.published_at) > CURRENT_DATE - 30 * INTERVAL '1 day'
+        MAX(dv.published_at) > '{{ ds }}'::DATE - 30 * INTERVAL '1 day'
 )
 
 SELECT

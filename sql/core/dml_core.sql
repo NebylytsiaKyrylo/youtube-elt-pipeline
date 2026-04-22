@@ -54,7 +54,7 @@ INSERT INTO core.fct_video_daily_snapshot (
 SELECT
     dv.video_key,
     dc.channel_key,
-    CURRENT_DATE AS snapshot_date,
+    '{{ ds }}'::DATE AS snapshot_date,
     yvs.view_count::BIGINT AS video_views,
     yvs.like_count::BIGINT AS video_likes,
     yvs.comment_count::BIGINT AS video_comments,
