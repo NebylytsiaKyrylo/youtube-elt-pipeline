@@ -76,5 +76,8 @@ def extract_all_channels(api_key: str, channels_ids: list[dict[str, str]]) -> li
         videos = extract_channel(client, channel["channel_id"])
         all_videos.extend(videos)
 
+    if not all_videos:
+        raise RuntimeError(f"No videos extracted from any of {len(channels_ids)} channels")
+
     logger.info(f"Extraction complete: {len(all_videos)} videos from {len(channels_ids)} channels")
     return all_videos
