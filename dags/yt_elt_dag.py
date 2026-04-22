@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 
-from airflow.models import Variable
-from airflow.sdk import dag, task, TaskGroup, BaseHook
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.sdk import dag, task, TaskGroup, Variable, get_current_context
 
 from storage.raw_storage import RawStorage
+from warehouse.loader import load_raw_to_staging
 from youtube.channels import CHANNELS
 from youtube.extractor import extract_all_channels
-from warehouse.pg_client import build_conn_string, get_engine
-from warehouse.loader import load_raw_to_staging
 
 SQL_BASE = "/opt/airflow/sql"
 POSTGRES_CONN_ID = "postgres_elt"
@@ -53,7 +52,6 @@ default_args = {
     tags=["youtube", "elt"],
 )
 def yt_elt_pipeline():
-
     def raw_storage() -> RawStorage:
         return RawStorage(
             endpoint_url=Variable.get("MINIO_ENDPOINT"),
@@ -65,21 +63,16 @@ def yt_elt_pipeline():
     @task
     def extract_to_s3() -> str:
         api_key = Variable.get("YOUTUBE_API_KEY")
+        context = get_current_context()
+        snapshot_date = context["logical_date"].date()
         data = extract_all_channels(api_key, CHANNELS)
         writer = raw_storage()
-        return writer.write(data, date.today())
+        return writer.write(data, snapshot_date)
 
     @task
     def load_raw_staging(key: str) -> int:
-        conn = BaseHook.get_connection(POSTGRES_CONN_ID)
-        conn_str = build_conn_string(
-            conn.login,
-            conn.password,
-            conn.host,
-            str(conn.port),
-            conn.schema,
-        )
-        engine = get_engine(conn_str)
+        hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
+        engine = hook.get_sqlalchemy_engine()
         reader = raw_storage()
         data = reader.read(key)
         return load_raw_to_staging(data, engine)
@@ -113,14 +106,12 @@ def yt_elt_pipeline():
     )
 
     with TaskGroup("marts") as marts_group:
-        [
+        for name in MART_FILES:
             SQLExecuteQueryOperator(
                 task_id=f"build_{name}",
                 conn_id=POSTGRES_CONN_ID,
                 sql=f"marts/{name}.sql",
             )
-            for name in MART_FILES
-        ]
 
     s3_key >> setup_staging >> load_staging >> setup_core >> transform_core >> setup_marts >> marts_group
 
