@@ -7,8 +7,8 @@ from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.smtp.notifications.smtp import SmtpNotifier
 from airflow.sdk import dag, task, TaskGroup, Variable, get_current_context
-from soda.scan import Scan
 
+from soda_utils.soda_checks import soda_scanner
 from storage.raw_storage import RawStorage
 from warehouse.loader import load_raw_to_staging
 from youtube.channels import CHANNELS
@@ -47,8 +47,6 @@ MART_FILES = [
     "mart_video_top_views",
     "mart_video_format_engagement",
 ]
-
-
 
 default_args = {
     'owner': 'data_engineer',
@@ -107,15 +105,11 @@ def yt_elt_pipeline() -> None:
 
     @task
     def quality_check_staging() -> None:
-        scan = Scan()
-        scan.set_data_source_name("yt_dwh")
-        scan.add_configuration_yaml_file(f"{SODA_BASE}/configuration.yml")
-        scan.add_sodacl_yaml_file(f"{SODA_BASE}/checks_staging.yml")
-        scan.execute()
-        if scan.has_error_logs():
-            raise ValueError(scan.get_error_logs_text())
-        if scan.has_check_fails():
-            raise ValueError(scan.get_checks_fail_text())
+        soda_scanner(
+            data_source_name="yt_dwh",
+            configuration_yaml_file_path=f"{SODA_BASE}/configuration.yml",
+            sodacl_yaml_file=f"{SODA_BASE}/checks_staging.yml"
+        )
 
     setup_core = SQLExecuteQueryOperator(
         task_id="setup_core",
@@ -131,15 +125,14 @@ def yt_elt_pipeline() -> None:
 
     @task
     def quality_check_core() -> None:
-        scan = Scan()
-        scan.set_data_source_name("yt_dwh")
-        scan.add_configuration_yaml_file(f"{SODA_BASE}/configuration.yml")
-        scan.add_sodacl_yaml_file(f"{SODA_BASE}/checks_core.yml")
-        scan.execute()
-        if scan.has_error_logs():
-            raise ValueError(scan.get_error_logs_text())
-        if scan.has_check_fails():
-            raise ValueError(scan.get_checks_fail_text())
+        context = get_current_context()
+        ds = str(context["logical_date"].date())
+        soda_scanner(
+            data_source_name="yt_dwh",
+            configuration_yaml_file_path=f"{SODA_BASE}/configuration.yml",
+            sodacl_yaml_file=f"{SODA_BASE}/checks_core.yml",
+            variables={"ds": ds}
+        )
 
     setup_marts = SQLExecuteQueryOperator(
         task_id="setup_marts",
@@ -157,16 +150,11 @@ def yt_elt_pipeline() -> None:
 
     @task
     def quality_check_marts() -> None:
-        scan = Scan()
-        scan.set_data_source_name("yt_dwh")
-        scan.add_configuration_yaml_file(f"{SODA_BASE}/configuration.yml")
-        scan.add_sodacl_yaml_file(f"{SODA_BASE}/checks_marts.yml")
-        scan.execute()
-        if scan.has_error_logs():
-            raise ValueError(scan.get_error_logs_text())
-        if scan.has_check_fails():
-            raise ValueError(scan.get_checks_fail_text())
-
+        soda_scanner(
+            data_source_name="yt_dwh",
+            configuration_yaml_file_path=f"{SODA_BASE}/configuration.yml",
+            sodacl_yaml_file=f"{SODA_BASE}/checks_marts.yml"
+        )
 
     s3_key = extract_to_s3()
     load_staging = load_raw_staging(s3_key)
