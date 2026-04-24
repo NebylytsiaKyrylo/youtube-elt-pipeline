@@ -61,7 +61,7 @@ class RawStorage:
             Body=payload.encode("utf-8"),
             ContentType="application/json",
         )
-        logger.info("Uploaded %d videos → s3://%s/%s", len(videos), self.bucket, key)
+        logger.info(f"Uploaded {len(videos)} videos → s3://{self.bucket}/{key}")
         return key
 
     def read(self, key: str) -> list[dict]:
@@ -81,7 +81,7 @@ class RawStorage:
             response = self.s3.get_object(Bucket=self.bucket, Key=key)
             body = response["Body"].read().decode("utf-8")
             data = json.loads(body)
-            logger.info("Downloaded %d records from s3://%s/%s", len(data), self.bucket, key)
+            logger.info(f"Downloaded {len(data)} records from s3://{self.bucket}/{key}")
             return data
         except ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchKey":
