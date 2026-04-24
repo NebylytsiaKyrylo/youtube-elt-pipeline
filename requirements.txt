@@ -89,6 +89,8 @@ ruamel-yaml-clib==0.2.15 ; platform_python_implementation == 'CPython'
     # via ruamel-yaml
 s3transfer==0.16.0
     # via boto3
+setuptools==82.0.1
+    # via youtube-etl-pipeline
 six==1.17.0
     # via python-dateutil
 soda-core==3.5.6
