@@ -36,9 +36,10 @@ x-airflow-volumes: &airflow-volumes
     - ./src:/opt/airflow/src
     - ./sql:/opt/airflow/sql
     - ./data:/opt/airflow/data
-    - ./include:/opt/airflow/include
+    - ./soda:/opt/airflow/soda
     - airflow_logs:/opt/airflow/logs
     - ./simple_auth_manager_passwords.json.generated:/opt/airflow/simple_auth_manager_passwords.json.generated
+    - ./templates:/opt/airflow/templates
 
 x-airflow-depends-on: &airflow-depends-on
   depends_on:
@@ -133,6 +134,7 @@ services:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 10s
       retries: 5
+      start_period: 15s
 
   minio-init:
     image: minio/mc:latest       # mc = MinIO Client
