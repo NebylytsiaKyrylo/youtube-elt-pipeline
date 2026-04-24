@@ -8,20 +8,18 @@ logger = logging.getLogger(__name__)
 
 
 def load_staging_batch(df: pd.DataFrame, engine: Engine) -> int:
-    """TRUNCATE staging.yt_video_snapshot then insert all rows. Returns row count."""
-    with engine.connect() as conn:
+    """TRUNCATE staging.yt_video_snapshot then insert all rows atomically. Returns row count."""
+    with engine.begin() as conn:
         conn.execute(text("TRUNCATE TABLE staging.yt_video_snapshot"))
-        conn.commit()
-
-    df.to_sql(
-        name="yt_video_snapshot",
-        con=engine,
-        schema="staging",
-        if_exists="append",
-        index=False,
-        method="multi",
-        chunksize=500,
-    )
+        df.to_sql(
+            name="yt_video_snapshot",
+            con=conn,
+            schema="staging",
+            if_exists="append",
+            index=False,
+            method="multi",
+            chunksize=500,
+        )
 
     logger.info(f"Loaded {len(df)} rows into staging.yt_video_snapshot")
     return len(df)
