@@ -1,0 +1,66 @@
+# uv run soda scan -d yt_dwh -c soda/configuration.yml soda/checks_core.yml
+checks for core.dim_channel:
+  - row_count = 42
+  - missing_count(channel_name) = 0
+  - min(subscribers_count) >= 10000
+  - updated_at_cannot_preced_loaded_at = 0:
+      name: "dim: updated_at cannot precede loaded_at"
+      updated_at_cannot_preced_loaded_at query: |
+        SELECT COUNT(*)                                                 
+        FROM core.dim_channel
+        WHERE updated_at < loaded_at                                 
+          AND loaded_at IS NOT NULL
+
+checks for core.dim_video:
+  - row_count >= 15000
+  - min(duration_seconds) >= 0
+  - updated_at_cannot_preced_loaded_at = 0:
+      name: "dim: updated_at cannot precede loaded_at"
+      updated_at_cannot_preced_loaded_at query: |
+        SELECT COUNT(*)                                                 
+        FROM core.dim_video
+        WHERE updated_at < loaded_at                                 
+          AND loaded_at IS NOT NULL
+
+checks for core.fct_video_daily_snapshot:
+  - row_count >= 15000
+  - min(video_views) >= 0
+  - min(video_likes) >= 0
+  - min(video_comments) >= 0
+  - likes_exceed_views = 0:
+      name: "fct: likes cannot exceed views"
+      likes_exceed_views query: |
+        SELECT COUNT(*)                                                 
+        FROM core.fct_video_daily_snapshot
+        WHERE video_likes > video_views                                 
+          AND video_views IS NOT NULL
+          AND video_views > 0
+  - comments_exceed_views = 0:
+      name: "fct: comments cannot exceed views"
+      comments_exceed_views query: |
+        SELECT COUNT(*)                                                 
+        FROM core.fct_video_daily_snapshot
+        WHERE video_comments > video_views                                 
+          AND video_views IS NOT NULL
+          AND video_views > 0
+  - duplicate_snapshot_key = 0:
+      name: "fct: no duplicate (video_key, snapshot_date)"
+      duplicate_snapshot_key query: |
+        SELECT COUNT(*)              
+        FROM (         
+          SELECT video_key, snapshot_date
+          FROM core.fct_video_daily_snapshot                            
+          GROUP BY video_key, snapshot_date 
+          HAVING COUNT(*) > 1                                           
+        ) AS t
+  - rows_for_ds > 0:
+      rows_for_ds query: |
+        SELECT COUNT(*)
+        FROM core.fct_video_daily_snapshot
+        WHERE snapshot_date = '${ds}'::DATE
+  - max_snapshot_is_ds = 0:
+      max_snapshot_is_ds query: |
+        SELECT
+          CASE WHEN MAX(snapshot_date) = '${ds}'::DATE THEN 0 ELSE 1 END
+        FROM core.fct_video_daily_snapshot
+

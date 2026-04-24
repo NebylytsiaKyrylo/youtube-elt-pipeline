@@ -1,0 +1,12 @@
+# uv run soda scan -d yt_dwh -c soda/configuration.yml soda/checks_staging.yml
+checks for staging.yt_video_snapshot:
+  - row_count >= 15000:
+      name: "Row count should be at least 15000"
+  - missing_count(video_id) = 0
+  - missing_count(channel_id) = 0
+  - missing_count(channel_name) = 0
+  - missing_count(channel_start_date) = 0
+  - missing_count(title) = 0
+  - missing_count(published_at) = 0
+  - missing_count(duration_iso) = 0
+  - duplicate_count(video_id) = 0
