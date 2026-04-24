@@ -35,6 +35,7 @@ SELECT
 FROM staging.yt_video_snapshot AS yvs
 INNER JOIN core.dim_channel AS dc
     ON yvs.channel_id = dc.channel_id
+WHERE EXTRACT(EPOCH FROM yvs.duration_iso::INTERVAL)::INT > 0
 ON CONFLICT (video_id) DO UPDATE
     SET
         title = excluded.title,
@@ -64,6 +65,7 @@ INNER JOIN core.dim_channel AS dc
     ON yvs.channel_id = dc.channel_id
 INNER JOIN core.dim_video AS dv
     ON yvs.video_id = dv.video_id
+WHERE EXTRACT(EPOCH FROM yvs.duration_iso::INTERVAL)::INT > 0
 ON CONFLICT (video_key, snapshot_date) DO UPDATE
     SET
         video_views = excluded.video_views,
