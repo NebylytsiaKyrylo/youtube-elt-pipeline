@@ -20,10 +20,7 @@ from youtube.client import YouTubeClient
 FAKE_CHANNEL_RESPONSE = {
     "kind": "youtube#channelListResponse",
     "etag": "d2Jb-YP7fFFUv4Y9W4KOS-lVbbY",
-    "pageInfo": {
-        "totalResults": 1,
-        "resultsPerPage": 5
-    },
+    "pageInfo": {"totalResults": 1, "resultsPerPage": 5},
     "items": [
         {
             "kind": "youtube#channel",
@@ -38,39 +35,34 @@ FAKE_CHANNEL_RESPONSE = {
                     "default": {
                         "url": "https://yt3.ggpht.com/WZ_63J_-745xyW_DGxGi3VUyTZAe0Jvhw2ZCg7fdz-tv9esTbNPZTFR9X79QzA0ArIrMjYJCDA=s88-c-k-c0x00ffffff-no-rj",
                         "width": 88,
-                        "height": 88
+                        "height": 88,
                     },
                     "medium": {
                         "url": "https://yt3.ggpht.com/WZ_63J_-745xyW_DGxGi3VUyTZAe0Jvhw2ZCg7fdz-tv9esTbNPZTFR9X79QzA0ArIrMjYJCDA=s240-c-k-c0x00ffffff-no-rj",
                         "width": 240,
-                        "height": 240
+                        "height": 240,
                     },
                     "high": {
                         "url": "https://yt3.ggpht.com/WZ_63J_-745xyW_DGxGi3VUyTZAe0Jvhw2ZCg7fdz-tv9esTbNPZTFR9X79QzA0ArIrMjYJCDA=s800-c-k-c0x00ffffff-no-rj",
                         "width": 800,
-                        "height": 800
-                    }
+                        "height": 800,
+                    },
                 },
                 "localized": {
                     "title": "Google for Developers",
-                    "description": "Subscribe to join a community of creative developers and learn the latest in Google technology — from AI and cloud, to mobile and web.\n\nExplore more at developers.google.com\n\n"
+                    "description": "Subscribe to join a community of creative developers and learn the latest in Google technology — from AI and cloud, to mobile and web.\n\nExplore more at developers.google.com\n\n",
                 },
-                "country": "US"
+                "country": "US",
             },
-            "contentDetails": {
-                "relatedPlaylists": {
-                    "likes": "",
-                    "uploads": "UU_x5XG1OV2P6uZZ5FSM9Ttw"
-                }
-            },
+            "contentDetails": {"relatedPlaylists": {"likes": "", "uploads": "UU_x5XG1OV2P6uZZ5FSM9Ttw"}},
             "statistics": {
                 "viewCount": "333709074",
                 "subscriberCount": "2620000",
                 "hiddenSubscriberCount": "false",
-                "videoCount": "6398"
-            }
+                "videoCount": "6398",
+            },
         }
-    ]
+    ],
 }
 
 FAKE_PLAYLIST_PAGE_1 = {
@@ -82,34 +74,22 @@ FAKE_PLAYLIST_PAGE_1 = {
             "kind": "youtube#playlistItem",
             "etag": "XXHQzOA3c75BztVoEFMRBUSd208",
             "id": "VVVfeDVYRzFPVjJQNnVaWjVGU005VHR3LnF6bk90d2lHdWRv",
-            "contentDetails": {
-                "videoId": "qznOtiGudoo",
-                "videoPublishedAt": "2026-04-24T16:01:35Z"
-            }
+            "contentDetails": {"videoId": "qznOtiGudoo", "videoPublishedAt": "2026-04-24T16:01:35Z"},
         },
         {
             "kind": "youtube#playlistItem",
             "etag": "ZVk2WJD0H2Pf664tCx45vbboa9A",
             "id": "VVVfeDVYRzFPVjJQNnVaWjVGU005VHR3LlR1SFkzMzFUR2g0",
-            "contentDetails": {
-                "videoId": "TuY331TGh44",
-                "videoPublishedAt": "2026-04-24T04:00:23Z"
-            }
+            "contentDetails": {"videoId": "TuY331TGh44", "videoPublishedAt": "2026-04-24T04:00:23Z"},
         },
         {
             "kind": "youtube#playlistItem",
             "etag": "MlbigB20u0_r3Nnt-aKNnu04z8M",
             "id": "VVVfeDVYRzFPVjJQNnVaWjVGU005VHR3LldZUGR6M09aZnVR",
-            "contentDetails": {
-                "videoId": "WYPdzOZfuQQ",
-                "videoPublishedAt": "2026-04-23T19:00:52Z"
-            }
+            "contentDetails": {"videoId": "WYPdzOZfuQQ", "videoPublishedAt": "2026-04-23T19:00:52Z"},
         },
     ],
-    "pageInfo": {
-        "totalResults": 6398,
-        "resultsPerPage": 3
-    }
+    "pageInfo": {"totalResults": 6398, "resultsPerPage": 3},
 }
 
 FAKE_PLAYLIST_PAGE_2 = {
@@ -120,34 +100,22 @@ FAKE_PLAYLIST_PAGE_2 = {
             "kind": "youtube#playlistItem",
             "etag": "XXHQzOA3c75BztVoEFMRBUSd208",
             "id": "VVVfeDVYRzFPVjJQNnVaWjVGU005VHR3LnF6bk90d2lHdWRv",
-            "contentDetails": {
-                "videoId": "qznOtwiGudo",
-                "videoPublishedAt": "2026-04-24T16:01:35Z"
-            }
+            "contentDetails": {"videoId": "qznOtwiGudo", "videoPublishedAt": "2026-04-24T16:01:35Z"},
         },
         {
             "kind": "youtube#playlistItem",
             "etag": "ZVk2WJD0H2Pf664tCx45vbboa9A",
             "id": "VVVfeDVYRzFPVjJQNnVaWjVGU005VHR3LlR1SFkzMzFUR2g0",
-            "contentDetails": {
-                "videoId": "TuHY331TGh4",
-                "videoPublishedAt": "2026-04-24T04:00:23Z"
-            }
+            "contentDetails": {"videoId": "TuHY331TGh4", "videoPublishedAt": "2026-04-24T04:00:23Z"},
         },
         {
             "kind": "youtube#playlistItem",
             "etag": "MlbigB20u0_r3Nnt-aKNnu04z8M",
             "id": "VVVfeDVYRzFPVjJQNnVaWjVGU005VHR3LldZUGR6M09aZnVR",
-            "contentDetails": {
-                "videoId": "WYPdz3OZfuQ",
-                "videoPublishedAt": "2026-04-23T19:00:52Z"
-            }
+            "contentDetails": {"videoId": "WYPdz3OZfuQ", "videoPublishedAt": "2026-04-23T19:00:52Z"},
         },
     ],
-    "pageInfo": {
-        "totalResults": 3,
-        "resultsPerPage": 3
-    }
+    "pageInfo": {"totalResults": 3, "resultsPerPage": 3},
 }
 
 FAKE_VIDEO_RESPONSE = {
@@ -164,31 +132,19 @@ FAKE_VIDEO_RESPONSE = {
                 "title": "Give your Gemini Live Agent a phone number!",
                 "description": "Learn how you can call your AI assistant with the power of Gemini, Google Cloud, and Twilio. \n\nSubscribe to Google for Developers → https://goo.gle/developers \n\nProducts Mentioned: Gemini \nSpeakers: Thor Schaeff",
                 "thumbnails": {
-                    "default": {
-                        "url": "https://i.ytimg.com/vi/qznOtwiGudo/default.jpg",
-                        "width": 120,
-                        "height": 90
-                    },
-                    "medium": {
-                        "url": "https://i.ytimg.com/vi/qznOtwiGudo/mqdefault.jpg",
-                        "width": 320,
-                        "height": 180
-                    },
-                    "high": {
-                        "url": "https://i.ytimg.com/vi/qznOtwiGudo/hqdefault.jpg",
-                        "width": 480,
-                        "height": 360
-                    },
+                    "default": {"url": "https://i.ytimg.com/vi/qznOtwiGudo/default.jpg", "width": 120, "height": 90},
+                    "medium": {"url": "https://i.ytimg.com/vi/qznOtwiGudo/mqdefault.jpg", "width": 320, "height": 180},
+                    "high": {"url": "https://i.ytimg.com/vi/qznOtwiGudo/hqdefault.jpg", "width": 480, "height": 360},
                     "standard": {
                         "url": "https://i.ytimg.com/vi/qznOtwiGudo/sddefault.jpg",
                         "width": 640,
-                        "height": 480
+                        "height": 480,
                     },
                     "maxres": {
                         "url": "https://i.ytimg.com/vi/qznOtwiGudo/maxresdefault.jpg",
                         "width": 1280,
-                        "height": 720
-                    }
+                        "height": 720,
+                    },
                 },
                 "channelTitle": "Google for Developers",
                 "tags": [
@@ -199,16 +155,16 @@ FAKE_VIDEO_RESPONSE = {
                     "Campaign:;",
                     "Video Type:G4D SV: Educational ;",
                     "ct: AIG;",
-                    "gds:N/A;"
+                    "gds:N/A;",
                 ],
                 "categoryId": "28",
                 "liveBroadcastContent": "none",
                 "defaultLanguage": "en",
                 "localized": {
                     "title": "Give your Gemini Live Agent a phone number!",
-                    "description": "Learn how you can call your AI assistant with the power of Gemini, Google Cloud, and Twilio. \n\nSubscribe to Google for Developers → https://goo.gle/developers \n\nProducts Mentioned: Gemini \nSpeakers: Thor Schaeff"
+                    "description": "Learn how you can call your AI assistant with the power of Gemini, Google Cloud, and Twilio. \n\nSubscribe to Google for Developers → https://goo.gle/developers \n\nProducts Mentioned: Gemini \nSpeakers: Thor Schaeff",
                 },
-                "defaultAudioLanguage": "en"
+                "defaultAudioLanguage": "en",
             },
             "contentDetails": {
                 "duration": "PT48S",
@@ -217,20 +173,12 @@ FAKE_VIDEO_RESPONSE = {
                 "caption": "false",
                 "licensedContent": "false",
                 "contentRating": {},
-                "projection": "rectangular"
+                "projection": "rectangular",
             },
-            "statistics": {
-                "viewCount": "8089",
-                "likeCount": "166",
-                "favoriteCount": "0",
-                "commentCount": "5"
-            }
+            "statistics": {"viewCount": "8089", "likeCount": "166", "favoriteCount": "0", "commentCount": "5"},
         }
     ],
-    "pageInfo": {
-        "totalResults": 1,
-        "resultsPerPage": 1
-    }
+    "pageInfo": {"totalResults": 1, "resultsPerPage": 1},
 }
 
 
@@ -251,7 +199,7 @@ class TestGetChannelInfo:
             "channel_name": "Google for Developers",
             "channel_start_date": "2007-08-23T00:34:43Z",
             "uploads_playlist_id": "UU_x5XG1OV2P6uZZ5FSM9Ttw",
-            "subscribers_count": "2620000"
+            "subscribers_count": "2620000",
         }
 
     def test_channel_not_found_raises_value_error(self):
@@ -261,9 +209,11 @@ class TestGetChannelInfo:
         client = YouTubeClient(api_key="fake_key")
 
         # Act + Assert
-        with patch.object(client.session, "get", return_value=fake_response):
-            with pytest.raises(ValueError, match="Channel not found"):
-                client.get_channel_info("UC_fake_id")
+        with (
+            patch.object(client.session, "get", return_value=fake_response),
+            pytest.raises(ValueError, match="Channel not found"),
+        ):
+            client.get_channel_info("UC_fake_id")
 
 
 class TestGetVideosIds:
@@ -313,16 +263,17 @@ class TestGetVideosDetails:
         with patch.object(client.session, "get", return_value=fake_response):
             result = client.get_videos_details(["qznOtwiGudo"])
 
-        assert result == [{
-            "video_id": "qznOtwiGudo",
-            "title": "Give your Gemini Live Agent a phone number!",
-            "published_at": "2026-04-24T16:01:35Z",
-            "duration_iso": "PT48S",
-            "view_count": "8089",
-            "like_count": "166",
-            "comment_count": "5"
-        }]
-
+        assert result == [
+            {
+                "video_id": "qznOtwiGudo",
+                "title": "Give your Gemini Live Agent a phone number!",
+                "published_at": "2026-04-24T16:01:35Z",
+                "duration_iso": "PT48S",
+                "view_count": "8089",
+                "like_count": "166",
+                "comment_count": "5",
+            }
+        ]
 
 
 class TestBatch:

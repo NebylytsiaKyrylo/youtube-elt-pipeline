@@ -6,12 +6,12 @@ uv run pytest tests/unit/test_raw_storage.py -v --cov=storage.raw_storage --cov-
 coverage: 100%
 """
 
-import json
 from datetime import date
+import json
 from unittest.mock import MagicMock
 
-import pytest
 from botocore.exceptions import ClientError
+import pytest
 
 from storage.raw_storage import RawStorage
 
@@ -87,4 +87,3 @@ class TestRead:
 
         with pytest.raises(ClientError):
             storage.read("youtube_data_2026-04-16.json")
-

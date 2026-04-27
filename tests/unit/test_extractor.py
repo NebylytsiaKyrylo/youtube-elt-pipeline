@@ -18,7 +18,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from youtube.extractor import extract_channel, extract_all_channels
+from youtube.extractor import extract_all_channels, extract_channel
 
 
 class TestExtractChannel:
@@ -29,7 +29,7 @@ class TestExtractChannel:
             "channel_name": "Google for Developers",
             "channel_start_date": "2007-08-23T00:34:43Z",
             "uploads_playlist_id": "UU_x5XG1OV2P6uZZ5FSM9Ttw",
-            "subscribers_count": "2620000"
+            "subscribers_count": "2620000",
         }
         mock_client.get_video_ids.return_value = ["qznOtwiGudo", "TuHY331TGh4", "WYPdz3OZfuQ"]
         mock_client.get_videos_details.return_value = [
@@ -40,7 +40,7 @@ class TestExtractChannel:
                 "duration_iso": "PT48S",
                 "view_count": "8089",
                 "like_count": "166",
-                "comment_count": "5"
+                "comment_count": "5",
             },
             {
                 "video_id": "TuHY331TGh4",
@@ -49,7 +49,7 @@ class TestExtractChannel:
                 "duration_iso": "PT48S",
                 "view_count": "1234",
                 "like_count": "123",
-                "comment_count": "12"
+                "comment_count": "12",
             },
             {
                 "video_id": "WYPdz3OZfuQ",
@@ -58,8 +58,9 @@ class TestExtractChannel:
                 "duration_iso": "PT50S",
                 "view_count": "12340",
                 "like_count": "1222",
-                "comment_count": "120"
-            }]
+                "comment_count": "120",
+            },
+        ]
 
         result = extract_channel(client=mock_client, channel_id="UC_x5XG1OV2P6uZZ5FSM9Ttw")
 
@@ -77,7 +78,7 @@ class TestExtractChannel:
                 "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
                 "channel_name": "Google for Developers",
                 "channel_start_date": "2007-08-23T00:34:43Z",
-                "subscribers_count": "2620000"
+                "subscribers_count": "2620000",
             },
             {
                 "video_id": "TuHY331TGh4",
@@ -90,7 +91,7 @@ class TestExtractChannel:
                 "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
                 "channel_name": "Google for Developers",
                 "channel_start_date": "2007-08-23T00:34:43Z",
-                "subscribers_count": "2620000"
+                "subscribers_count": "2620000",
             },
             {
                 "video_id": "WYPdz3OZfuQ",
@@ -103,8 +104,8 @@ class TestExtractChannel:
                 "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
                 "channel_name": "Google for Developers",
                 "channel_start_date": "2007-08-23T00:34:43Z",
-                "subscribers_count": "2620000"
-            }
+                "subscribers_count": "2620000",
+            },
         ]
 
     def test_no_video_ids_returns_empty_list(self):
@@ -114,7 +115,7 @@ class TestExtractChannel:
             "channel_name": "Google for Developers",
             "channel_start_date": "2007-08-23T00:34:43Z",
             "uploads_playlist_id": "UU_x5XG1OV2P6uZZ5FSM9Ttw",
-            "subscribers_count": "2620000"
+            "subscribers_count": "2620000",
         }
         mock_client.get_video_ids.return_value = []
 
@@ -141,66 +142,72 @@ class TestExtractChannel:
 
 class TestExtractAllChannels:
     def test_success_returns_all_videos(self):
-        channels = [{"channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw", "channel_name": "Google for Developers"},
-                    {"channel_id": "UC_x5XG1OV346uZZ5FSM9T-tw", "channel_name": "Claude for Developers"}]
+        channels = [
+            {"channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw", "channel_name": "Google for Developers"},
+            {"channel_id": "UC_x5XG1OV346uZZ5FSM9T-tw", "channel_name": "Claude for Developers"},
+        ]
 
-        with patch("youtube.extractor.YouTubeClient") as MockClient:
-            instance = MockClient("fake_api")
+        with patch("youtube.extractor.YouTubeClient") as mock_client:
+            instance = mock_client("fake_api")
             instance.get_channel_info.side_effect = [
                 {
                     "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
                     "channel_name": "Google for Developers",
                     "channel_start_date": "2007-08-23T00:34:43Z",
                     "uploads_playlist_id": "UU_x5XG1OV2P6uZZ5FSM9Ttw",
-                    "subscribers_count": "2620000"
+                    "subscribers_count": "2620000",
                 },
                 {
                     "channel_id": "UC_x5XG1OV346uZZ5FSM9T-tw",
                     "channel_name": "Claude for Developers",
                     "channel_start_date": "2019-08-23T00:34:43Z",
                     "uploads_playlist_id": "UU_x5XG1OV346uZZ5FSM9Ttw",
-                    "subscribers_count": "12620000"
-                }
-
+                    "subscribers_count": "12620000",
+                },
             ]
             instance.get_video_ids.side_effect = [["qznOtwiGudo", "TuHY331TGh4", "WYPdz3OZfuQ"], ["qznOtwiGudo0"]]
-            instance.get_videos_details.side_effect = [[
-                {
-                    "video_id": "qznOtwiGudo",
-                    "title": "Give your Gemini Live Agent a phone number!",
-                    "published_at": "2026-04-24T16:01:35Z",
-                    "duration_iso": "PT48S",
-                    "view_count": "8089",
-                    "like_count": "166",
-                    "comment_count": "5"
-                },
-                {
-                    "video_id": "TuHY331TGh4",
-                    "title": "How to use Gemini in your app",
-                    "published_at": "2026-04-24T04:00:23Z",
-                    "duration_iso": "PT48S",
-                    "view_count": "1234",
-                    "like_count": "123",
-                    "comment_count": "12"
-                },
-                {
-                    "video_id": "WYPdz3OZfuQ",
-                    "title": "How to use Claude in your app",
-                    "published_at": "2026-04-24T04:00:23Z",
-                    "duration_iso": "PT50S",
-                    "view_count": "12340",
-                    "like_count": "1222",
-                    "comment_count": "120"
-                }],
-                [{
-                    "video_id": "qznOtwiGudo0",
-                    "title": "Give your Claude Agent a phone number!",
-                    "published_at": "2026-04-25T16:01:35Z",
-                    "duration_iso": "PT55S",
-                    "view_count": "80890",
-                    "like_count": "1662",
-                    "comment_count": "50"
-                }]]
+            instance.get_videos_details.side_effect = [
+                [
+                    {
+                        "video_id": "qznOtwiGudo",
+                        "title": "Give your Gemini Live Agent a phone number!",
+                        "published_at": "2026-04-24T16:01:35Z",
+                        "duration_iso": "PT48S",
+                        "view_count": "8089",
+                        "like_count": "166",
+                        "comment_count": "5",
+                    },
+                    {
+                        "video_id": "TuHY331TGh4",
+                        "title": "How to use Gemini in your app",
+                        "published_at": "2026-04-24T04:00:23Z",
+                        "duration_iso": "PT48S",
+                        "view_count": "1234",
+                        "like_count": "123",
+                        "comment_count": "12",
+                    },
+                    {
+                        "video_id": "WYPdz3OZfuQ",
+                        "title": "How to use Claude in your app",
+                        "published_at": "2026-04-24T04:00:23Z",
+                        "duration_iso": "PT50S",
+                        "view_count": "12340",
+                        "like_count": "1222",
+                        "comment_count": "120",
+                    },
+                ],
+                [
+                    {
+                        "video_id": "qznOtwiGudo0",
+                        "title": "Give your Claude Agent a phone number!",
+                        "published_at": "2026-04-25T16:01:35Z",
+                        "duration_iso": "PT55S",
+                        "view_count": "80890",
+                        "like_count": "1662",
+                        "comment_count": "50",
+                    }
+                ],
+            ]
 
             result = extract_all_channels(api_key="fake_key", channels_ids=channels)
 
@@ -218,7 +225,7 @@ class TestExtractAllChannels:
                 "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
                 "channel_name": "Google for Developers",
                 "channel_start_date": "2007-08-23T00:34:43Z",
-                "subscribers_count": "2620000"
+                "subscribers_count": "2620000",
             },
             {
                 "video_id": "TuHY331TGh4",
@@ -231,7 +238,7 @@ class TestExtractAllChannels:
                 "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
                 "channel_name": "Google for Developers",
                 "channel_start_date": "2007-08-23T00:34:43Z",
-                "subscribers_count": "2620000"
+                "subscribers_count": "2620000",
             },
             {
                 "video_id": "WYPdz3OZfuQ",
@@ -244,7 +251,7 @@ class TestExtractAllChannels:
                 "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
                 "channel_name": "Google for Developers",
                 "channel_start_date": "2007-08-23T00:34:43Z",
-                "subscribers_count": "2620000"
+                "subscribers_count": "2620000",
             },
             {
                 "video_id": "qznOtwiGudo0",
@@ -257,15 +264,17 @@ class TestExtractAllChannels:
                 "channel_id": "UC_x5XG1OV346uZZ5FSM9T-tw",
                 "channel_name": "Claude for Developers",
                 "channel_start_date": "2019-08-23T00:34:43Z",
-                "subscribers_count": "12620000"
-            }
+                "subscribers_count": "12620000",
+            },
         ]
 
     def test_raises_runtime_error_if_all_channels_empty(self):
-        channels = [{"channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw", "channel_name": "Google for Developers"},
-                    {"channel_id": "UC_x5XG1OV346uZZ5FSM9T-tw", "channel_name": "Claude for Developers"}]
+        channels = [
+            {"channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw", "channel_name": "Google for Developers"},
+            {"channel_id": "UC_x5XG1OV346uZZ5FSM9T-tw", "channel_name": "Claude for Developers"},
+        ]
 
-        with patch("youtube.extractor.YouTubeClient") as MockClient:
-            MockClient.return_value.get_channel_info.side_effect = ValueError("Not found")
+        with patch("youtube.extractor.YouTubeClient") as mock_client:
+            mock_client.return_value.get_channel_info.side_effect = ValueError("Not found")
             with pytest.raises(RuntimeError):
                 extract_all_channels(api_key="fake_key", channels_ids=channels)

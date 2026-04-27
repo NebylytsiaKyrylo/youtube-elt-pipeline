@@ -23,7 +23,7 @@ FAKE_VIDEOS = [
         "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
         "channel_name": "Google for Developers",
         "channel_start_date": "2007-08-23T00:34:43Z",
-        "subscribers_count": "2620000"
+        "subscribers_count": "2620000",
     },
     {
         "video_id": "TuHY331TGh4",
@@ -36,7 +36,7 @@ FAKE_VIDEOS = [
         "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
         "channel_name": "Google for Developers",
         "channel_start_date": "2007-08-23T00:34:43Z",
-        "subscribers_count": "2620000"
+        "subscribers_count": "2620000",
     },
     {
         "video_id": "WYPdz3OZfuQ",
@@ -49,7 +49,7 @@ FAKE_VIDEOS = [
         "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
         "channel_name": "Google for Developers",
         "channel_start_date": "2007-08-23T00:34:43Z",
-        "subscribers_count": "2620000"
+        "subscribers_count": "2620000",
     },
     {
         "video_id": "qznOtwiGudo0",
@@ -62,8 +62,8 @@ FAKE_VIDEOS = [
         "channel_id": "UC_x5XG1OV346uZZ5FSM9T-tw",
         "channel_name": "Claude for Developers",
         "channel_start_date": "2019-08-23T00:34:43Z",
-        "subscribers_count": "12620000"
-    }
+        "subscribers_count": "12620000",
+    },
 ]
 
 
@@ -75,7 +75,7 @@ def make_engine():
 
 class TestLoadStagingBatch:
     def test_returns_row_count(self):
-        engine, conn = make_engine()
+        engine, _conn = make_engine()
         df = pd.DataFrame(FAKE_VIDEOS)
 
         result = load_staging_batch(df=df, engine=engine)
@@ -112,7 +112,7 @@ class TestLoadStagingBatch:
 
 class TestLoadRawToStaging:
     def test_converts_dicts_to_dataframe_and_loads(self):
-        engine, conn = make_engine()
+        engine, _conn = make_engine()
 
         result = load_raw_to_staging(raw_data=FAKE_VIDEOS, engine=engine)
 
