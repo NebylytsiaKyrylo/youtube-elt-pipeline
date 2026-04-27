@@ -246,11 +246,13 @@ class TestGetChannelInfo:
             result = client.get_channel_info("UC_x5XG1OV2P6uZZ5FSM9Ttw")
 
         # Assert
-        assert result["channel_name"] == "Google for Developers"
-        assert result["channel_id"] == "UC_x5XG1OV2P6uZZ5FSM9Ttw"
-        assert result["subscribers_count"] == "2620000"
-        assert result["uploads_playlist_id"] == "UU_x5XG1OV2P6uZZ5FSM9Ttw"
-        assert result["channel_start_date"] == "2007-08-23T00:34:43Z"
+        assert result == {
+            "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+            "channel_name": "Google for Developers",
+            "channel_start_date": "2007-08-23T00:34:43Z",
+            "uploads_playlist_id": "UU_x5XG1OV2P6uZZ5FSM9Ttw",
+            "subscribers_count": "2620000"
+        }
 
     def test_channel_not_found_raises_value_error(self):
         # Arrange
