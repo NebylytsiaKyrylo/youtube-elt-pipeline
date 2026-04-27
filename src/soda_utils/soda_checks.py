@@ -2,10 +2,7 @@ from soda.scan import Scan
 
 
 def soda_scanner(
-        data_source_name: str,
-        configuration_yaml_file_path: str,
-        sodacl_yaml_file: str,
-        variables: dict | None = None
+    data_source_name: str, configuration_yaml_file_path: str, sodacl_yaml_file: str, variables: dict | None = None
 ) -> None:
     scan = Scan()
     scan.set_data_source_name(data_source_name)

@@ -1,7 +1,8 @@
 """YouTube API client with retry logic and session management."""
 
+from collections.abc import Generator
 import logging
-from typing import Generator, TypedDict
+from typing import TypedDict
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -16,6 +17,7 @@ MAX_RESULTS: int = 50
 
 class VideoDetails(TypedDict):
     """Details of a single YouTube video as returned by the API."""
+
     video_id: str
     title: str
     published_at: str
@@ -27,6 +29,7 @@ class VideoDetails(TypedDict):
 
 class EnrichedVideoDetails(VideoDetails):
     """Video details enriched with channel metadata."""
+
     channel_id: str
     channel_name: str
     subscribers_count: str
@@ -35,6 +38,7 @@ class EnrichedVideoDetails(VideoDetails):
 
 class ChannelInfo(TypedDict):
     """Channel metadata returned by the YouTube channels endpoint."""
+
     channel_id: str
     channel_name: str
     channel_start_date: str  # ISO 8601 datetime
@@ -116,7 +120,7 @@ class YouTubeClient:
             "channel_name": channel_name,
             "channel_start_date": channel_start_date,
             "uploads_playlist_id": uploads_playlist_id,
-            "subscribers_count": subscribers_count
+            "subscribers_count": subscribers_count,
         }
 
     def get_video_ids(self, playlist_id: str) -> list[str]:
@@ -218,4 +222,4 @@ class YouTubeClient:
             Lists of size `size` (last batch may be smaller)
         """
         for i in range(0, len(lst), size):
-            yield lst[i: i + size]
+            yield lst[i : i + size]

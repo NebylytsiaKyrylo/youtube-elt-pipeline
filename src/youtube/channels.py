@@ -42,5 +42,5 @@ CHANNELS = [
     {"channel_id": "UCMFbNXUkjSUJ6WC20tGTzJg", "channel_name": "École du Web"},
     {"channel_id": "UCUjo_IKa9Cqkx_x-rMly8MA", "channel_name": "getCodingKnowledge"},
     {"channel_id": "UC1VLE5isKBsZbkT2KvLKSLA", "channel_name": "Johan : Solutions Digitales"},
-    {"channel_id": "UCnEHCrot2HkySxMTmDPhZyg", "channel_name": "Defend Intelligence"}
+    {"channel_id": "UCnEHCrot2HkySxMTmDPhZyg", "channel_name": "Defend Intelligence"},
 ]

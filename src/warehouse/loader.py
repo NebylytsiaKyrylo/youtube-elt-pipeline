@@ -3,7 +3,6 @@ import logging
 import pandas as pd
 from sqlalchemy import Engine, text
 
-
 logger = logging.getLogger(__name__)
 
 

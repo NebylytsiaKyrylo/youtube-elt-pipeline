@@ -2,7 +2,7 @@
 
 import logging
 
-from youtube.client import YouTubeClient, EnrichedVideoDetails
+from youtube.client import EnrichedVideoDetails, YouTubeClient
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +42,7 @@ def extract_channel(client: YouTubeClient, channel_id: str) -> list[EnrichedVide
             video["channel_start_date"] = channel_info["channel_start_date"]
             video["subscribers_count"] = channel_info["subscribers_count"]
 
-        logger.info(
-            f"Extracted {len(videos)} videos from channel_id: {channel_id} "
-            f"({channel_info['channel_name']})"
-        )
+        logger.info(f"Extracted {len(videos)} videos from channel_id: {channel_id} ({channel_info['channel_name']})")
         return videos
 
     except ValueError as e:
@@ -72,7 +69,7 @@ def extract_all_channels(api_key: str, channels_ids: list[dict[str, str]]) -> li
     all_videos = []
 
     for i, channel in enumerate(channels_ids, start=1):
-        logger.info(f"Processing {i}/{len(channels_ids)}: {channel["channel_name"]} with id {channel["channel_id"]}")
+        logger.info(f"Processing {i}/{len(channels_ids)}: {channel['channel_name']} with id {channel['channel_id']}")
         videos = extract_channel(client, channel["channel_id"])
         all_videos.extend(videos)
 
