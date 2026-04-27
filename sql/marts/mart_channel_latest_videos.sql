@@ -9,5 +9,5 @@ FROM core.dim_video AS dv
 INNER JOIN core.dim_channel AS dc
     ON dv.channel_key = dc.channel_key
 ORDER BY
-    dc.channel_key,
+    dc.channel_key ASC,
     dv.published_at DESC;
