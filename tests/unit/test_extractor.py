@@ -145,7 +145,7 @@ class TestExtractAllChannels:
                     {"channel_id": "UC_x5XG1OV346uZZ5FSM9T-tw", "channel_name": "Claude for Developers"}]
 
         with patch("youtube.extractor.YouTubeClient") as MockClient:
-            instance = MockClient.return_value
+            instance = MockClient("fake_api")
             instance.get_channel_info.side_effect = [
                 {
                     "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
