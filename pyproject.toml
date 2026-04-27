@@ -117,3 +117,13 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false  # Respecte les virgules finales intentionnelles :
 line-ending = "auto"               # Détecte Mac ou Windows automatiquement
+
+# Pytest
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+python_files = "test_*.py"
+python_functions = "test_*"
+markers = [
+    "integration: tests requiring a real database (skip in CI with '-m not integration')",
+]
