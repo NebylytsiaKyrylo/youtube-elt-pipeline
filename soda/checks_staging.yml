@@ -1,7 +1,14 @@
 # uv run soda scan -d yt_dwh -c soda/configuration.yml soda/checks_staging.yml
 checks for staging.yt_video_snapshot:
-  - row_count >= 15000:
-      name: "Row count should be at least 15000"
+  - staging_vs_yesterday_fact_ratio > 0.95:
+      staging_vs_yesterday_fact_ratio query: |
+        SELECT
+            COUNT(*)::NUMERIC / NULLIF((
+                SELECT COUNT(*)
+                FROM core.fct_video_daily_snapshot
+                WHERE snapshot_date = '${ds}'::DATE - INTERVAL '1 day'
+            ), 0)
+        FROM staging.yt_video_snapshot
   - missing_count(video_id) = 0
   - missing_count(channel_id) = 0
   - missing_count(channel_name) = 0
