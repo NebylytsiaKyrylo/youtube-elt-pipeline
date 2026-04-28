@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS core.dim_video (
     title TEXT NOT NULL,
     published_at TIMESTAMPTZ NOT NULL,
     duration_seconds INT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    deleted_at TIMESTAMPTZ DEFAULT NULL,
     loaded_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -34,3 +36,7 @@ CREATE TABLE IF NOT EXISTS core.fct_video_daily_snapshot (
 
 CREATE INDEX IF NOT EXISTS idx_fct_channel
 ON core.fct_video_daily_snapshot (channel_key, snapshot_date);
+
+CREATE INDEX IF NOT EXISTS idx_dim_video_deleted
+ON core.dim_video (video_key)
+WHERE is_active = FALSE;
