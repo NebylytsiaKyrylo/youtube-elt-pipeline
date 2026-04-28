@@ -6,7 +6,7 @@ from pathlib import Path
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.smtp.notifications.smtp import SmtpNotifier
-from airflow.sdk import dag, task, TaskGroup, Variable, get_current_context
+from airflow.sdk import TaskGroup, Variable, dag, get_current_context, task
 
 from soda_utils.soda_checks import soda_scanner
 from storage.raw_storage import RawStorage
@@ -49,13 +49,13 @@ MART_FILES = [
 ]
 
 default_args = {
-    'owner': 'data_engineer',
-    'depends_on_past': False,
-    'retries': 2,
-    'retry_delay': timedelta(minutes=5),
-    'execution_timeout': timedelta(minutes=10),
-    'retry_exponential_backoff': True,
-    'on_failure_callback': [_smtp_on_failure],
+    "owner": "data_engineer",
+    "depends_on_past": False,
+    "retries": 2,
+    "retry_delay": timedelta(minutes=5),
+    "execution_timeout": timedelta(minutes=10),
+    "retry_exponential_backoff": True,
+    "on_failure_callback": [_smtp_on_failure],
 }
 
 
@@ -77,7 +77,7 @@ def yt_elt_pipeline() -> None:
             endpoint_url=Variable.get("MINIO_ENDPOINT"),
             access_key=Variable.get("MINIO_ACCESS_KEY"),
             secret_key=Variable.get("MINIO_SECRET_KEY"),
-            bucket=Variable.get("MINIO_BUCKET")
+            bucket=Variable.get("MINIO_BUCKET"),
         )
 
     @task(execution_timeout=timedelta(minutes=20))
@@ -105,10 +105,13 @@ def yt_elt_pipeline() -> None:
 
     @task
     def quality_check_staging() -> None:
+        context = get_current_context()
+        ds = str(context["logical_date"].date())
         soda_scanner(
             data_source_name="yt_dwh",
             configuration_yaml_file_path=f"{SODA_BASE}/configuration.yml",
-            sodacl_yaml_file=f"{SODA_BASE}/checks_staging.yml"
+            sodacl_yaml_file=f"{SODA_BASE}/checks_staging.yml",
+            variables={"ds": ds},
         )
 
     setup_core = SQLExecuteQueryOperator(
@@ -131,8 +134,14 @@ def yt_elt_pipeline() -> None:
             data_source_name="yt_dwh",
             configuration_yaml_file_path=f"{SODA_BASE}/configuration.yml",
             sodacl_yaml_file=f"{SODA_BASE}/checks_core.yml",
-            variables={"ds": ds}
+            variables={"ds": ds},
         )
+
+    soft_delete_core = SQLExecuteQueryOperator(
+        task_id="soft_delete_core",
+        conn_id=POSTGRES_CONN_ID,
+        sql="core/dml_soft_delete.sql",
+    )
 
     setup_marts = SQLExecuteQueryOperator(
         task_id="setup_marts",
@@ -153,7 +162,7 @@ def yt_elt_pipeline() -> None:
         soda_scanner(
             data_source_name="yt_dwh",
             configuration_yaml_file_path=f"{SODA_BASE}/configuration.yml",
-            sodacl_yaml_file=f"{SODA_BASE}/checks_marts.yml"
+            sodacl_yaml_file=f"{SODA_BASE}/checks_marts.yml",
         )
 
     s3_key = extract_to_s3()
@@ -164,8 +173,8 @@ def yt_elt_pipeline() -> None:
 
     # Pipeline ELT
     s3_key >> setup_staging >> load_staging >> qc_staging
-    qc_staging >> setup_core >> transform_core >> qc_core
-    qc_core >> setup_marts >> marts_group >> qc_marts
+    qc_staging >> setup_core >> transform_core >> qc_core >> soft_delete_core
+    soft_delete_core >> setup_marts >> marts_group >> qc_marts
 
 
 dag = yt_elt_pipeline()
