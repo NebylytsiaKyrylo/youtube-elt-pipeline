@@ -40,7 +40,9 @@ ON CONFLICT (video_id) DO UPDATE
     SET
         title = excluded.title,
         duration_seconds = excluded.duration_seconds,
-        updated_at = NOW();
+        updated_at = NOW(),
+        is_active = TRUE,
+        deleted_at = NULL;
 
 -- 3. fct_video_daily_snapshot: FK in fct_video_daily_snapshot references video_key and channel_key
 INSERT INTO core.fct_video_daily_snapshot (
