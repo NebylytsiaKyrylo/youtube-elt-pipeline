@@ -97,11 +97,25 @@ def yt_elt_pipeline() -> None:
         data = reader.read(key)
         return load_raw_to_staging(data, engine)
 
-    setup_staging = SQLExecuteQueryOperator(
-        task_id="setup_staging",
-        conn_id=POSTGRES_CONN_ID,
-        sql="staging/ddl_staging.sql",
-    )
+    with TaskGroup("setup_tables") as setup_tables:
+        # Setup staging
+        SQLExecuteQueryOperator(
+            task_id="setup_staging",
+            conn_id=POSTGRES_CONN_ID,
+            sql="staging/ddl_staging.sql",
+        )
+        # Setup core
+        SQLExecuteQueryOperator(
+            task_id="setup_core",
+            conn_id=POSTGRES_CONN_ID,
+            sql="core/ddl_core.sql",
+        )
+        # Setup marts
+        SQLExecuteQueryOperator(
+            task_id="setup_marts",
+            conn_id=POSTGRES_CONN_ID,
+            sql="marts/ddl_schema_marts.sql",
+        )
 
     @task
     def quality_check_staging() -> None:
@@ -113,12 +127,6 @@ def yt_elt_pipeline() -> None:
             sodacl_yaml_file=f"{SODA_BASE}/checks_staging.yml",
             variables={"ds": ds},
         )
-
-    setup_core = SQLExecuteQueryOperator(
-        task_id="setup_core",
-        conn_id=POSTGRES_CONN_ID,
-        sql="core/ddl_core.sql",
-    )
 
     transform_core = SQLExecuteQueryOperator(
         task_id="transform_core",
@@ -141,12 +149,6 @@ def yt_elt_pipeline() -> None:
         task_id="soft_delete_core",
         conn_id=POSTGRES_CONN_ID,
         sql="core/dml_soft_delete.sql",
-    )
-
-    setup_marts = SQLExecuteQueryOperator(
-        task_id="setup_marts",
-        conn_id=POSTGRES_CONN_ID,
-        sql="marts/ddl_schema_marts.sql",
     )
 
     with TaskGroup("marts") as marts_group:
@@ -172,9 +174,8 @@ def yt_elt_pipeline() -> None:
     qc_marts = quality_check_marts()
 
     # Pipeline ELT
-    s3_key >> setup_staging >> load_staging >> qc_staging
-    qc_staging >> setup_core >> transform_core >> qc_core >> soft_delete_core
-    soft_delete_core >> setup_marts >> marts_group >> qc_marts
+    s3_key >> setup_tables >> load_staging >> qc_staging >> transform_core >> qc_core
+    qc_core >> soft_delete_core >> marts_group >> qc_marts
 
 
 dag = yt_elt_pipeline()

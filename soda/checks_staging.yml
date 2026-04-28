@@ -3,11 +3,11 @@ checks for staging.yt_video_snapshot:
   - staging_vs_yesterday_fact_ratio > 0.95:
       staging_vs_yesterday_fact_ratio query: |
         SELECT
-            COUNT(*)::NUMERIC / NULLIF((
-                SELECT COUNT(*)
-                FROM core.fct_video_daily_snapshot
-                WHERE snapshot_date = '${ds}'::DATE - INTERVAL '1 day'
-            ), 0)
+          COALESCE(COUNT(*)::NUMERIC / NULLIF((
+                                            SELECT COUNT(*)
+                                            FROM core.fct_video_daily_snapshot
+                                            WHERE snapshot_date = '${ds}'::DATE - INTERVAL '1 day'
+                                        ), 0), 1.0)
         FROM staging.yt_video_snapshot
   - missing_count(video_id) = 0
   - missing_count(channel_id) = 0
