@@ -16,7 +16,7 @@ ON CONFLICT (channel_id) DO UPDATE
     SET
         channel_name = excluded.channel_name,
         subscribers_count = excluded.subscribers_count,
-        updated_at = NOW();
+        dwh_updated_at = NOW();
 
 -- 2. dim_video: FK in dim_video references channel_key
 INSERT INTO core.dim_video (
@@ -40,7 +40,7 @@ ON CONFLICT (video_id) DO UPDATE
     SET
         title = excluded.title,
         duration_seconds = excluded.duration_seconds,
-        updated_at = NOW(),
+        dwh_updated_at = NOW(),
         is_active = TRUE,
         deleted_at = NULL;
 
@@ -52,7 +52,7 @@ INSERT INTO core.fct_video_daily_snapshot (
     video_views,
     video_likes,
     video_comments,
-    ingestion_ts
+    dwh_loaded_at
 )
 SELECT
     dv.video_key,
@@ -61,7 +61,7 @@ SELECT
     yvs.view_count::BIGINT AS video_views,
     yvs.like_count::BIGINT AS video_likes,
     yvs.comment_count::BIGINT AS video_comments,
-    NOW() AS ingestion_ts
+    NOW() AS dwh_loaded_at
 FROM staging.yt_video_snapshot AS yvs
 INNER JOIN core.dim_channel AS dc
     ON yvs.channel_id = dc.channel_id
@@ -73,4 +73,4 @@ ON CONFLICT (video_key, snapshot_date) DO UPDATE
         video_views = excluded.video_views,
         video_likes = excluded.video_likes,
         video_comments = excluded.video_comments,
-        ingestion_ts = excluded.ingestion_ts;
+        dwh_loaded_at = excluded.dwh_loaded_at;

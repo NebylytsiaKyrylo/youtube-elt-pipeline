@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS core.dim_channel (
     channel_name TEXT,
     subscribers_count BIGINT,
     channel_start_date DATE,
-    loaded_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    dwh_loaded_at TIMESTAMPTZ DEFAULT NOW(),
+    dwh_updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS core.dim_video (
@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS core.dim_video (
     duration_seconds INT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     deleted_at TIMESTAMPTZ DEFAULT NULL,
-    loaded_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    dwh_loaded_at TIMESTAMPTZ DEFAULT NOW(),
+    dwh_updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS core.fct_video_daily_snapshot (
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS core.fct_video_daily_snapshot (
     video_views BIGINT,
     video_likes BIGINT,
     video_comments BIGINT,
-    ingestion_ts TIMESTAMPTZ NOT NULL,
+    dwh_loaded_at TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (video_key, snapshot_date)
 );
 
