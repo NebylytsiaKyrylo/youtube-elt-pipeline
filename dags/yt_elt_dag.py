@@ -114,7 +114,7 @@ def yt_elt_pipeline() -> None:
         SQLExecuteQueryOperator(
             task_id="setup_marts",
             conn_id=POSTGRES_CONN_ID,
-            sql="marts/ddl_schema_marts.sql",
+            sql="marts/ddl_marts.sql",
         )
 
     @task
