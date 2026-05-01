@@ -54,7 +54,7 @@ Le pipeline est organisé en **quatre couches physiques** :
 
 - **raw** — fichiers JSON immuables dans un object store compatible S3 (un fichier par date d'extraction)
 - **staging** — miroir brut du JSON en SQL, toutes les colonnes en `TEXT`, tronqué et rechargé à chaque exécution
-- **core** — schéma typé et dédupliqué, source unique de vérité (modèle en étoile Kimball avec deux dimensions et une table de faits)
+- **core** — cette couche constitue la source de vérité. Le schéma est typé et structuré en étoile selon la méthode Kimball. Pour garantir la cohérence des données lors des rechargements, j'utilise une logique d'UPSERT permettant de mettre à jour les enregistrements existants en cas de conflit sur les clés primaires.
 - **marts** — tables analytiques dénormalisées, reconstruites entièrement à chaque exécution avec un `DROP + CREATE TABLE AS`
 
 Chaque couche a une seule responsabilité et une seule stratégie de chargement. Une couche corrompue peut toujours être reconstruite depuis la couche d'en dessous, ce qui isole les pannes et simplifie le débogage.
