@@ -8,6 +8,8 @@ Les réponses brutes de l'API sont d'abord stockées en JSON dans MinIO, qui jou
 
 L'orchestration de bout en bout est faite avec Apache Airflow, la qualité des données est contrôlée à chaque couche par Soda Core (portes bloquantes), les marts sont exposés dans Metabase pour la consultation interactive, et toute la stack démarre en une seule commande grâce à Docker Compose.
 
+**Stack :** Python, SQL (PostgreSQL 17), Docker, Apache Airflow 3.2, MinIO (S3), Soda Core, uv, ruff, SQLFluff, GitHub Actions et Metabase.
+
 Le cahier des charges complet est dans [docs/requirements.md](docs/requirements.md).
 
 ---
@@ -17,10 +19,7 @@ Le cahier des charges complet est dans [docs/requirements.md](docs/requirements.
 - [Besoin métier](#besoin-métier)
 - [Comment j'ai construit ce projet](#comment-jai-construit-ce-projet)
 - [Structure du dépôt](#structure-du-dépôt)
-- [Stack technique](#stack-technique)
 - [Comment lancer le projet](#comment-lancer-le-projet)
-- [Hors périmètre](#hors-périmètre)
-- [Licence](#licence)
 
 ---
 
@@ -145,7 +144,7 @@ C'est un livrable typique d'un projet data : il évite à un analyste de devoir 
 
 ### 9. Qualité des données — Soda Core
 
-Avoir des données dans le warehouse ne suffit pas — il faut garantir qu'elles sont **utilisables**. J'ai utilisé **Soda Core** (bibliothèque Python, syntaxe YAML) pour automatiser ces contrôles à chaque couche du pipeline. Trois suites de checks, une par couche, dans [soda/](soda/) : `checks_staging.yml`, `checks_core.yml`, `checks_marts.yml`.
+Avoir des données dans le warehouse ne suffit pas — il faut garantir qu'elles sont **utilisables**. J'ai utilisé **Soda Core** (bibliothèque Python, syntaxe YAML) pour automatiser ces contrôles à chaque couche du pipeline. Trois suites de checks, une par couche, dans [soda](soda) : `checks_staging.yml`, `checks_core.yml`, `checks_marts.yml`.
 
 Les contrôles sont organisés par **catégorie** :
 
@@ -157,9 +156,151 @@ Les contrôles sont organisés par **catégorie** :
 
 Le point clé : ces contrôles s'exécutent comme **portes bloquantes** dans le DAG Airflow. Un check qui échoue lève une `ValueError` et interrompt le run avant que les données corrompues ne se propagent vers les marts et les dashboards. Le coût d'un faux positif (un run légitime bloqué) est largement inférieur au coût d'un faux négatif (mauvaises données dans la BI). Pour absorber le bruit, j'utilise des seuils de ratio (`> 0.95`) plutôt que des égalités strictes là où c'est pertinent.
 
-![Tableau de bord Soda Core montrant les contrôles qualité](docs/img/quality_checks_soda_core.png)
+![Tableau de bord Soda Core montrant les contrôles qualité](docs/img/qc_soda_core.png)
 
 L'exécution de Soda depuis Airflow passe par un petit utilitaire ([src/soda_utils/soda_checks.py](src/soda_utils/soda_checks.py)) qui charge la configuration de la datasource ([soda/configuration.yml](soda/configuration.yml)), lance le scan, et lève une exception si au moins un check est en échec.
+
+### 10. Orchestration — Airflow
+
+Une fois chaque brique fonctionnelle en isolation, je les ai assemblées dans un DAG Airflow ([dags/yt_elt_dag.py](dags/yt_elt_dag.py)). C'est l'étape qui transforme un ensemble de scripts en pipeline de production : exécution planifiée, retries automatiques, dépendances explicites, alerting, et observabilité de chaque tâche.
+
+Le pipeline enchaîne les étapes suivantes :
+
+1. **`extract_to_s3`** — extraction depuis l'API YouTube et écriture du JSON brut dans MinIO.
+2. **`setup_tables`** — création/vérification des schémas et tables (staging, core, marts), les trois DDL s'exécutent en parallèle dans un TaskGroup.
+3. **`load_raw_staging`** — relecture du JSON depuis MinIO et chargement dans la table de staging.
+4. **`quality_check_staging`** — porte qualité Soda sur staging (volume, complétude, doublons).
+5. **`transform_core`** — upserts des dimensions et insertion dans la table de faits.
+6. **`quality_check_core`** — porte qualité Soda sur core (intégrité référentielle, invariants métier, fraîcheur).
+7. **`soft_delete_core`** — marquage des vidéos absentes de l'extrait du jour comme `is_active = FALSE`.
+8. **`marts`** — construction des 10 marts en parallèle dans un TaskGroup.
+9. **`quality_check_marts`** — porte qualité Soda sur les marts (`row_count > 0`, bornes des scores).
+
+![Vue Graph du DAG dans Airflow](docs/img/DAG_graph.png)
+
+Côté implémentation, j'ai mélangé **`@task` décorateurs** pour les étapes Python et **`SQLExecuteQueryOperator`** pour les étapes SQL pures, ce qui garde chaque tâche dans son langage naturel.
+
+### 11. Notifications email
+
+Un pipeline qui tourne sans alerting est un pipeline qu'on ne surveille pas. J'ai branché des notifications email SMTP sur deux événements : un échec de tâche et un succès du DAG.
+
+Les deux notifications utilisent le `SmtpNotifier` d'Airflow avec des templates HTML ([templates/email_success.html](templates/email_success.html), [templates/email_failure.html](templates/email_failure.html)).
+
+![Email de succès reçu après un run du pipeline](docs/img/email_pipeline.png)
+
+### 12. BI — dashboards Metabase
+
+J'ai connecté **Metabase** au schema `marts` du warehouse pour faire quelques visualisations sur les 10 tables analytiques.
+
+![Dashboard Metabase — vue d'ensemble](docs/img/Metabase_1.png)
+
+![Dashboard Metabase — engagement et rétention](docs/img/Metabase_2.png)
+
+![Dashboard Metabase — formats vidéo et tendances](docs/img/Metabase_3.png)
+
+### 13. Validation end-to-end
+
+Une fois toutes les briques en place, j'ai validé le pipeline de bout en bout sur une base vide : vidage complet du warehouse et du bucket MinIO, puis déclenchement manuel du DAG. Toutes les tâches passent au vert, les trois portes Soda valident, les comptages sont cohérents dans `dim_channel`, `dim_video` et `fct_video_daily_snapshot`, et chaque mart contient des lignes.
+
+J'ai aussi vérifié les deux comportements critiques :
+
+- **Idempotence** — re-déclencher le DAG sur la même date produit un état strictement identique (aucun doublon, aucune ligne en trop, aucun écart sur les métriques).
+- **Alerting** — j'ai simulé un échec en cassant volontairement une tâche pour confirmer la réception de l'email d'échec, et je vérifie quotidiennement la réception de l'email de succès.
+
+---
+
+## Structure du dépôt
+
+```text
+.
+├── .github/
+│   └── workflows/
+│       └── ci.yml                    # Workflow CI : lint Python + SQL, format check, tests unitaires
+│
+├── dags/
+│   └── yt_elt_dag.py                 # DAG Airflow — orchestre l'ensemble du pipeline
+│
+├── docs/                             # Documentation du projet
+│   ├── architecture.drawio           
+│   ├── architecture.png              # Diagramme d'architecture
+│   ├── ERD_data_model_core.drawio    
+│   ├── ERD_data_model_core.png       # Modèle de données du core
+│   ├── img/                          
+│   ├── data_catalog.md               # Metadata pour core et marts
+│   ├── decisions.md                  
+│   ├── naming_conventions.md         # Conventions de nommage
+│   ├── requirements.md               # Cahier des charges
+│   └── runbook.md                    # Comment lancer le projet
+│
+├── soda/                             # Suites de contrôles qualité Soda Core
+│   ├── configuration.yml             # Configuration de la datasource Postgres
+│   ├── checks_staging.yml            
+│   ├── checks_core.yml               
+│   └── checks_marts.yml              
+│
+├── sql/                              # Tout le SQL du pipeline, par couche
+│   ├── staging/
+│   │   └── ddl_staging.sql           
+│   ├── core/
+│   │   ├── ddl_core.sql              
+│   │   ├── dml_core.sql              
+│   │   └── dml_soft_delete.sql       # Marquage des vidéos disparues
+│   └── marts/
+│       ├── ddl_marts.sql             
+│       └── mart_*.sql                # Les 10 marts en DROP + CREATE TABLE AS
+│
+├── src/                              # Code Python du pipeline
+│   ├── youtube/                      # Extraction depuis l'API YouTube Data v3
+│   │   ├── client.py                 # Client HTTP avec retry et session
+│   │   ├── extractor.py              # Orchestration de l'extraction par chaîne
+│   │   └── channels.py               # Liste statique des chaînes à extraire
+│   ├── storage/                      # Couche raw — stockage objet
+│   │   └── raw_storage.py            # Lecture/écriture JSON dans MinIO (S3-compatible)
+│   ├── warehouse/                    # Accès au warehouse Postgres
+│   │   ├── pg_client.py              # Helpers de connexion Postgres
+│   │   └── loader.py                 # Loader staging (TRUNCATE + INSERT pandas)
+│   └── soda_utils/                   # Wrapper d'exécution Soda Core depuis Airflow
+│       └── soda_checks.py
+│
+├── templates/                        # Templates HTML des notifications email
+│   ├── email_success.html
+│   └── email_failure.html
+│
+├── tests/                            # Tests unitaires (intégration prévus mais non implémentés)
+│   ├── conftest.py
+│   └── unit/
+│       ├── test_client.py
+│       ├── test_extractor.py
+│       ├── test_loader.py
+│       └── test_raw_storage.py
+│
+├── .env.example                      # Template des variables d'environnement
+├── .gitignore
+├── .dockerignore                     
+├── .python-version                   # Version Python épinglée
+├── Dockerfile                        # Image Airflow
+├── docker-compose.yaml               # Services
+├── pyproject.toml                    # Dépendances + config ruff/sqlfluff/pytest
+├── uv.lock                           # Lockfile uv
+├── requirements.txt                  # Export uv des dépendances pour Dockerfile
+└── README.md                         # Ce fichier
+```
+
+> Au premier démarrage, Airflow génère un fichier `simple_auth_manager_passwords.json.generated` à la racine du projet contenant le mot de passe admin de l'UI. Ce fichier est local et ne doit pas être versionné — il est listé dans le `.gitignore`.
+
+---
+
+## Comment lancer le projet
+
+Pour reproduire le projet en local (prérequis, préparation du `.env`, démarrage de la stack, vérification des services et création des Variables/Connexions Airflow), j'ai rédigé un runbook dédié : [docs/runbook.md](docs/runbook.md).
+
+---
+
+Licence [MIT](LICENSE)
+
+
+
+
 
 
 
