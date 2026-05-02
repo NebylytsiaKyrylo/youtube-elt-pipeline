@@ -7,6 +7,19 @@
 - [Besoin métier](#besoin-métier)
 - [Ce que j'ai construit](#ce-que-jai-construit)
 - [Comment j'ai construit ce projet](#comment-jai-construit-ce-projet)
+  - [1. Conception](#1-conception--périmètre-architecture-modélisation)
+  - [2. Fondations](#2-fondations--outillage-infrastructure-locale-ci)
+  - [3. Extraction API YouTube](#3-extraction-depuis-lapi-youtube)
+  - [4. Couche raw](#4-couche-raw--stockage-json-immuable-dans-minio)
+  - [5. Couche staging](#5-couche-staging--miroir-sql-du-json)
+  - [6. Couche core](#6-couche-core--star-schema-soft-delete-snapshots-quotidiens)
+  - [7. Couche marts](#7-couche-marts--10-tables-analytiques)
+  - [8. Data catalog](#8-data-catalog--documentation-des-couches-consommables)
+  - [9. Qualité des données](#9-qualité-des-données--soda-core)
+  - [10. Orchestration Airflow](#10-orchestration--airflow)
+  - [11. Notifications email](#11-notifications-email)
+  - [12. BI Metabase](#12-bi--dashboards-metabase)
+  - [13. Validation end-to-end](#13-validation-end-to-end)
 - [Structure du dépôt](#structure-du-dépôt)
 - [Comment lancer le projet](#comment-lancer-le-projet)
 
@@ -89,6 +102,8 @@ J'ai choisi **MinIO** plutôt qu'un système de fichiers local. MinIO expose la 
 
 La classe [src/storage/raw_storage.py](src/storage/raw_storage.py) expose deux méthodes : `write` qui sérialise la liste des vidéos en JSON et l'upload dans le bucket, et `read` qui retélécharge et désérialise un fichier passé. Le tout est testé dans [tests/unit/test_raw_storage.py](tests/unit/test_raw_storage.py) avec un client S3 mocké.
 
+La capture ci-dessous montre le bucket `youtube-raw` dans l'UI MinIO, avec les fichiers JSON nommés par date d'exécution (`YYYY-MM-DD.json`).
+
 ![Bucket MinIO contenant les fichiers JSON bruts](docs/img/minio_bucket.png)
 
 ### 5. Couche staging — miroir SQL du JSON
@@ -153,6 +168,8 @@ Les contrôles sont organisés par **catégorie** :
 
 Le point clé : ces contrôles s'exécutent comme **portes bloquantes** dans le DAG Airflow. Un check qui échoue lève une `ValueError` et interrompt le run avant que les données corrompues ne se propagent vers les marts et les dashboards. Le coût d'un faux positif (un run légitime bloqué) est largement inférieur au coût d'un faux négatif (mauvaises données dans la BI). Pour absorber le bruit, j'utilise des seuils de ratio (`> 0.95`) plutôt que des égalités strictes là où c'est pertinent.
 
+La capture ci-dessous montre un scan Soda Core sur la couche staging : tous les checks passent au vert, le run Airflow continue.
+
 ![Tableau de bord Soda Core montrant les contrôles qualité](docs/img/qc_soda_core.png)
 
 L'exécution de Soda depuis Airflow passe par un petit utilitaire ([src/soda_utils/soda_checks.py](src/soda_utils/soda_checks.py)) qui charge la configuration de la datasource ([soda/configuration.yml](soda/configuration.yml)), lance le scan, et lève une exception si au moins un check est en échec.
@@ -173,7 +190,13 @@ Le pipeline enchaîne les étapes suivantes :
 8. **`marts`** — construction des 10 marts en parallèle dans un TaskGroup.
 9. **`quality_check_marts`** — porte qualité Soda sur les marts (`row_count > 0`, bornes des scores).
 
+La vue Graph d'Airflow montre la structure du DAG avec les dépendances entre tâches et les deux TaskGroups (`setup_tables` et `marts`).
+
 ![Vue Graph du DAG dans Airflow](docs/img/DAG_graph.png)
+
+La grille ci-dessous montre un run complet avec toutes les tâches au vert — la preuve que le pipeline s'exécute de bout en bout sans erreur.
+
+![Run complet du DAG — toutes les tâches au vert](docs/img/DAG_run.png)
 
 Côté implémentation, j'ai mélangé **`@task` décorateurs** pour les étapes Python et **`SQLExecuteQueryOperator`** pour les étapes SQL pures, ce qui garde chaque tâche dans son langage naturel.
 
@@ -183,15 +206,23 @@ Un pipeline qui tourne sans alerting est un pipeline qu'on ne surveille pas. J'a
 
 Les deux notifications utilisent le `SmtpNotifier` d'Airflow avec des templates HTML ([templates/email_success.html](templates/email_success.html), [templates/email_failure.html](templates/email_failure.html)).
 
+La capture ci-dessous montre l'email de succès reçu après un run complet — titre du DAG, date d'exécution, et lien direct vers les logs Airflow.
+
 ![Email de succès reçu après un run du pipeline](docs/img/email_pipeline.png)
 
 ### 12. BI — dashboards Metabase
 
 J'ai connecté **Metabase** au schema `marts` du warehouse pour faire quelques visualisations sur les 10 tables analytiques.
 
+Vue d'ensemble : classement des chaînes par vues, abonnés, et distribution par taille d'audience.
+
 ![Dashboard Metabase — vue d'ensemble](docs/img/Metabase_1.png)
 
+Engagement et rétention : scores d'engagement et de rétention par chaîne active, comparaison communauté fidèle vs audience passive.
+
 ![Dashboard Metabase — engagement et rétention](docs/img/Metabase_2.png)
+
+Formats vidéo : engagement moyen par tranche de durée, pour orienter les recommandations de format contenu.
 
 ![Dashboard Metabase — formats vidéo et tendances](docs/img/Metabase_3.png)
 
