@@ -12,16 +12,12 @@ L'orchestration de bout en bout est faite avec Apache Airflow, la qualité des d
 
 Le cahier des charges complet est dans [docs/requirements.md](docs/requirements.md).
 
----
-
 ## Table des matières
 
 - [Besoin métier](#besoin-métier)
 - [Comment j'ai construit ce projet](#comment-jai-construit-ce-projet)
 - [Structure du dépôt](#structure-du-dépôt)
 - [Comment lancer le projet](#comment-lancer-le-projet)
-
----
 
 ## Besoin métier
 
@@ -36,8 +32,6 @@ L'agence fournit une liste curatée d'environ 40 chaînes (minimum 10 000 abonn�
 5. **Performance par format** — quelles durées de vidéo génèrent le meilleur engagement
 
 Chaque mart répond à une question précise, avec ses métriques, ses filtres et ses critères d'acceptation. Le détail des 10 marts est documenté dans [docs/requirements.md](docs/requirements.md).
-
----
 
 ## Comment j'ai construit ce projet
 
