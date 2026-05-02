@@ -235,7 +235,6 @@ J'ai aussi vérifié les deux comportements critiques :
 - **Idempotence** — re-déclencher le DAG sur la même date produit un état strictement identique (aucun doublon, aucune ligne en trop, aucun écart sur les métriques).
 - **Alerting** — j'ai simulé un échec en cassant volontairement une tâche pour confirmer la réception de l'email d'échec, et je vérifie quotidiennement la réception de l'email de succès.
 
----
 
 ## Structure du dépôt
 
@@ -316,7 +315,6 @@ J'ai aussi vérifié les deux comportements critiques :
 
 > Au premier démarrage, Airflow génère un fichier `simple_auth_manager_passwords.json.generated` à la racine du projet contenant le mot de passe admin de l'UI. Ce fichier est local et ne doit pas être versionné — il est listé dans le `.gitignore`.
 
----
 
 ## Comment lancer le projet
 
