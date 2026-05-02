@@ -2,6 +2,32 @@
 
 [![CI](https://github.com/NebylytsiaKyrylo/youtube-elt-pipeline/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/NebylytsiaKyrylo/youtube-elt-pipeline/actions/workflows/ci.yml)
 
+## Table des matières
+
+- [Besoin métier](#besoin-métier)
+- [Ce que j'ai construit](#ce-que-jai-construit)
+- [Comment j'ai construit ce projet](#comment-jai-construit-ce-projet)
+- [Structure du dépôt](#structure-du-dépôt)
+- [Comment lancer le projet](#comment-lancer-le-projet)
+
+## Besoin métier
+
+Une agence marketing française spécialisée dans la tech souhaite identifier les chaînes YouTube francophones les plus influentes dans le domaine technique — Data, IA, Développement Web, DevOps, Cybersécurité — afin de conseiller ses clients sur leurs partenariats et leurs formats de contenu.
+
+L'agence fournit une liste curatée d'environ 40 chaînes (minimum 10 000 abonnés chacune). Les données doivent être actualisées automatiquement chaque jour via l'API YouTube Data.
+
+**Ce qui est demandé :**
+
+- Extraire quotidiennement les métadonnées et statistiques des chaînes et vidéos depuis l'API YouTube
+- Stocker les données brutes, puis les charger dans un entrepôt analytique structuré en couches
+- Livrer **10 tables analytiques rafraîchies chaque jour** (marts) pour alimenter les recommandations de partenariats
+- Garantir la qualité des données à chaque étape du pipeline
+- Exposer les résultats dans un outil BI interactif
+
+Le cahier des charges complet est dans [docs/requirements.md](docs/requirements.md).
+
+## Ce que j'ai construit
+
 J'ai construit un pipeline ELT qui extrait quotidiennement les métadonnées et statistiques d'environ 40 chaînes YouTube tech francophones via l'API YouTube Data v3.
 
 Les réponses brutes de l'API sont d'abord stockées en JSON dans MinIO, qui joue le rôle de data lake compatible S3. À partir de ce data lake, les données sont chargées dans un data warehouse PostgreSQL organisé en trois couches : `staging` (miroir brut typé en `TEXT`), `core` (modèle Kimball typé et dédupliqué — deux dimensions et une table de faits) et `marts` (10 tables analytiques dénormalisées prêtes pour la BI).
@@ -9,29 +35,6 @@ Les réponses brutes de l'API sont d'abord stockées en JSON dans MinIO, qui jou
 L'orchestration de bout en bout est faite avec Apache Airflow, la qualité des données est contrôlée à chaque couche par Soda Core (portes bloquantes), les marts sont exposés dans Metabase pour la consultation interactive, et toute la stack démarre en une seule commande grâce à Docker Compose.
 
 **Stack :** Python, SQL (PostgreSQL 17), Docker, Apache Airflow 3.2, MinIO (S3), Soda Core, uv, ruff, SQLFluff, GitHub Actions et Metabase.
-
-Le cahier des charges complet est dans [docs/requirements.md](docs/requirements.md).
-
-## Table des matières
-
-- [Besoin métier](#besoin-métier)
-- [Comment j'ai construit ce projet](#comment-jai-construit-ce-projet)
-- [Structure du dépôt](#structure-du-dépôt)
-- [Comment lancer le projet](#comment-lancer-le-projet)
-
-## Besoin métier
-
-Une agence marketing française spécialisée dans la tech cherche à identifier les chaînes YouTube francophones les plus influentes dans le domaine technique — Data, IA, Développement Web, DevOps, Cybersécurité, Génie Logiciel — pour conseiller ses clients sur leurs partenariats et leurs formats de contenu.
-
-L'agence fournit une liste curatée d'environ 40 chaînes (minimum 10 000 abonnés chacune). Mon travail consiste à actualiser quotidiennement les métadonnées des chaînes et des vidéos via l'API YouTube Data, à modéliser tout cela dans un entrepôt analytique, et à livrer **10 tables analytiques rafraîchies chaque jour** qui répondent à cinq familles de questions métier :
-
-1. **Volume & portée** — qui domine en vues absolues et en abonnés
-2. **Engagement & rétention** — qui transforme des vues en interactions
-3. **Efficacité d'audience** — qui a la communauté la plus engagée par rapport à sa taille
-4. **Activité de publication** — qui est encore actif et depuis quand
-5. **Performance par format** — quelles durées de vidéo génèrent le meilleur engagement
-
-Chaque mart répond à une question précise, avec ses métriques, ses filtres et ses critères d'acceptation. Le détail des 10 marts est documenté dans [docs/requirements.md](docs/requirements.md).
 
 ## Comment j'ai construit ce projet
 
@@ -48,7 +51,7 @@ Le pipeline est organisé en **quatre couches physiques** :
 - **raw** — fichiers JSON immuables dans un object store compatible S3 (un fichier par date d'extraction)
 - **staging** — miroir brut du JSON en SQL, toutes les colonnes en `TEXT`, tronqué et rechargé à chaque exécution
 - **core** — cette couche constitue la source de vérité. Le schéma est typé et structuré en étoile selon la méthode Kimball. Pour garantir la cohérence des données lors des rechargements, j'utilise une logique d'UPSERT permettant de mettre à jour les enregistrements existants en cas de conflit sur les clés primaires.
-- **marts** — tables analytiques dénormalisées, reconstruites entièrement à chaque exécution avec un `DROP + CREATE TABLE AS`
+- **marts** — tables analytiques dénormalisées, reconstruites à chaque exécution via un atomic swap (`CREATE _new` → `RENAME` → `DROP old`) pour garantir une disponibilité continue
 
 Chaque couche a une seule responsabilité et une seule stratégie de chargement. Une couche corrompue peut toujours être reconstruite depuis la couche d'en dessous, ce qui isole les pannes et simplifie le débogage.
 
@@ -56,7 +59,7 @@ Chaque couche a une seule responsabilité et une seule stratégie de chargement.
 
 Pour la modélisation du `core`, j'ai retenu un **star schema** plutôt qu'un modèle 3NF normalisé. C'est le pattern dominant pour les warehouses analytiques : il réduit le nombre de jointures par requête, simplifie les plans d'exécution, et c'est le format pour lequel les outils BI comme Metabase sont optimisés. Le grain est sans ambiguïté : une ligne par `(vidéo, date de snapshot)` dans la table de faits, ce qui me permet de conserver l'historique journalier des métriques d'engagement.
 
-Enfin, j'ai posé dès le départ des **conventions de nommage** (préfixes de schémas et de tables, préfixes de colonnes, nommage des fichiers raw) pour éviter d'avoir à renommer du code plus tard. Elles sont documentées dans [docs/naming_conventions.md](docs/naming_conventions.md), et l'ensemble des décisions structurantes (ELT, 4 couches, star schema, SCD Type 1, soft delete, full refresh) est consigné dans [docs/decisions.md](docs/decisions.md).
+Enfin, j'ai posé dès le départ des **conventions de nommage** (préfixes de schémas et de tables, préfixes de colonnes, nommage des fichiers raw) pour éviter d'avoir à renommer du code plus tard. Elles sont documentées dans [docs/naming_conventions.md](docs/naming_conventions.md), et l'ensemble des décisions structurantes (ELT, 4 couches, star schema, SCD Type 1, soft delete, atomic swap) est consigné dans [docs/decisions.md](docs/decisions.md).
 
 ### 2. Fondations — outillage, infrastructure locale, CI
 
@@ -124,7 +127,7 @@ Enfin, chaque dimension porte les colonnes techniques `dwh_loaded_at` et `dwh_up
 
 Les marts sont la **couche de consommation** du warehouse : des tables dénormalisées, prêtes à être affichées dans Metabase ou requêtées directement. Chaque mart répond à une question métier précise du cahier des charges et a sa propre spécification (métriques, filtres, critères d'acceptation) détaillée dans [docs/requirements.md](docs/requirements.md).
 
-Tous les marts suivent la même stratégie de chargement : **`DROP TABLE IF EXISTS` + `CREATE TABLE AS SELECT`**. C'est le pattern le plus simple pour une idempotence parfaite — pas de logique de conflit, pas de delta à calculer, pas de risque d'état partiel. Le compute "gaspillé" à reconstruire chaque mart à chaque run est négligeable à ce volume, et le code SQL reste auditable d'un seul coup d'œil. Le DDL du schéma est dans [sql/marts/ddl_marts.sql](sql/marts/ddl_marts.sql) (un simple `CREATE SCHEMA IF NOT EXISTS marts`).
+Tous les marts suivent la même stratégie de chargement : **atomic swap**. Chaque mart est d'abord construit dans une table `_new`, puis renommé atomiquement en remplacement de la table active, et l'ancienne version est supprimée. Ce pattern garantit que Metabase ne voit jamais une table vide ou inexistante pendant la reconstruction — le renommage PostgreSQL est instantané, contrairement au `CREATE TABLE AS SELECT` qui peut durer plusieurs secondes. Le DDL du schéma est dans [sql/marts/ddl_marts.sql](sql/marts/ddl_marts.sql).
 
 Côté SQL, les marts m'ont permis de mettre en pratique l'essentiel du SQL analytique : **CTEs** (`WITH`) pour structurer les requêtes en étapes lisibles, **window functions** (`DENSE_RANK() OVER (ORDER BY …)`) pour les classements avec gestion des ex-æquo, **agrégations** (`SUM`, `COUNT`, `AVG`, `MAX`) avec `GROUP BY` multi-colonnes et `HAVING` pour les filtres post-agrégation, **jointures** sur le star schema (fait + deux dimensions), **`CASE`** pour la bucketisation, **arithmétique de dates** (`INTERVAL`, `AGE`, `EXTRACT`), et casting explicite (`::NUMERIC`, `::DATE`). Le code source de chaque mart est dans [sql/marts](sql/marts).
 
@@ -241,7 +244,7 @@ J'ai aussi vérifié les deux comportements critiques :
 │   │   └── dml_soft_delete.sql       # Marquage des vidéos disparues
 │   └── marts/
 │       ├── ddl_marts.sql             
-│       └── mart_*.sql                # Les 10 marts en DROP + CREATE TABLE AS
+│       └── mart_*.sql                # Les 10 marts — atomic swap
 │
 ├── src/                              # Code Python du pipeline
 │   ├── youtube/                      # Extraction depuis l'API YouTube Data v3
