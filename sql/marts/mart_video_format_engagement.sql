@@ -1,5 +1,4 @@
-DROP TABLE IF EXISTS marts.mart_video_format_engagement;
-CREATE TABLE marts.mart_video_format_engagement AS
+CREATE TABLE marts.mart_video_format_engagement_new AS
 SELECT
     CASE
         WHEN dv.duration_seconds::NUMERIC / 60 < 3 THEN '0-3 min'
@@ -18,3 +17,7 @@ WHERE
     ds.snapshot_date = '{{ ds }}'::DATE
 GROUP BY duration_bucket
 ORDER BY avg_engagement_score DESC;
+
+ALTER TABLE IF EXISTS marts.mart_video_format_engagement RENAME TO mart_video_format_engagement_old;
+ALTER TABLE marts.mart_video_format_engagement_new RENAME TO mart_video_format_engagement;
+DROP TABLE IF EXISTS marts.mart_video_format_engagement_old;

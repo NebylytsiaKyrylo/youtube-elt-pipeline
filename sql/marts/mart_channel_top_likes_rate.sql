@@ -1,5 +1,4 @@
-DROP TABLE IF EXISTS marts.mart_channel_top_likes_rate;
-CREATE TABLE marts.mart_channel_top_likes_rate AS
+CREATE TABLE marts.mart_channel_top_likes_rate_new AS
 WITH
 aggregated_channels AS (
     SELECT
@@ -25,3 +24,7 @@ SELECT
     ROUND(total_likes::NUMERIC / total_views, 3) AS likes_rate
 FROM aggregated_channels
 ORDER BY likes_rate DESC;
+
+ALTER TABLE IF EXISTS marts.mart_channel_top_likes_rate RENAME TO mart_channel_top_likes_rate_old;
+ALTER TABLE marts.mart_channel_top_likes_rate_new RENAME TO mart_channel_top_likes_rate;
+DROP TABLE IF EXISTS marts.mart_channel_top_likes_rate_old;

@@ -1,5 +1,4 @@
-DROP TABLE IF EXISTS marts.mart_channel_engagement_active;
-CREATE TABLE marts.mart_channel_engagement_active AS
+CREATE TABLE marts.mart_channel_engagement_active_new AS
 
 WITH
 aggregated_channel_active AS (
@@ -40,3 +39,7 @@ SELECT
 FROM aggregated_channel_active
 ORDER BY
     engagement_score DESC;
+
+ALTER TABLE IF EXISTS marts.mart_channel_engagement_active RENAME TO mart_channel_engagement_active_old;
+ALTER TABLE marts.mart_channel_engagement_active_new RENAME TO mart_channel_engagement_active;
+DROP TABLE IF EXISTS marts.mart_channel_engagement_active_old;

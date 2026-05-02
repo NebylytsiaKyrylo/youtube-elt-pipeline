@@ -1,5 +1,4 @@
-DROP TABLE IF EXISTS marts.mart_channel_size_distribution;
-CREATE TABLE marts.mart_channel_size_distribution AS
+CREATE TABLE marts.mart_channel_size_distribution_new AS
 WITH
 aggregated_channels AS (
     SELECT
@@ -36,4 +35,8 @@ ORDER BY
         WHEN '1M-10M views' THEN 2
         WHEN '10M-50M views' THEN 3
         WHEN '> 50M views' THEN 4
-    END
+    END;
+
+ALTER TABLE IF EXISTS marts.mart_channel_size_distribution RENAME TO mart_channel_size_distribution_old;
+ALTER TABLE marts.mart_channel_size_distribution_new RENAME TO mart_channel_size_distribution;
+DROP TABLE IF EXISTS marts.mart_channel_size_distribution_old;

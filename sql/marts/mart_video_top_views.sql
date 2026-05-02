@@ -1,5 +1,4 @@
-DROP TABLE IF EXISTS marts.mart_video_top_views;
-CREATE TABLE marts.mart_video_top_views AS
+CREATE TABLE marts.mart_video_top_views_new AS
 WITH
 ranked_videos AS (
     SELECT
@@ -27,3 +26,7 @@ SELECT
 FROM ranked_videos
 WHERE
     video_rank BETWEEN 1 AND 10;
+
+ALTER TABLE IF EXISTS marts.mart_video_top_views RENAME TO mart_video_top_views_old;
+ALTER TABLE marts.mart_video_top_views_new RENAME TO mart_video_top_views;
+DROP TABLE IF EXISTS marts.mart_video_top_views_old;

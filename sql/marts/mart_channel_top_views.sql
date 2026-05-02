@@ -1,5 +1,4 @@
-DROP TABLE IF EXISTS marts.mart_channel_top_views;
-CREATE TABLE marts.mart_channel_top_views AS
+CREATE TABLE marts.mart_channel_top_views_new AS
 SELECT
     dc.channel_key,
     dc.channel_name,
@@ -17,3 +16,7 @@ GROUP BY
     dc.channel_name
 ORDER BY
     total_views DESC;
+
+ALTER TABLE IF EXISTS marts.mart_channel_top_views RENAME TO mart_channel_top_views_old;
+ALTER TABLE marts.mart_channel_top_views_new RENAME TO mart_channel_top_views;
+DROP TABLE IF EXISTS marts.mart_channel_top_views_old;

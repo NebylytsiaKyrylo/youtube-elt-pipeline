@@ -1,5 +1,4 @@
-DROP TABLE IF EXISTS marts.mart_channel_retention;
-CREATE TABLE marts.mart_channel_retention AS
+CREATE TABLE marts.mart_channel_retention_new AS
 
 WITH
 aggregated_channel_active AS (
@@ -36,3 +35,7 @@ SELECT
 FROM aggregated_channel_active
 ORDER BY
     retention_score DESC;
+
+ALTER TABLE IF EXISTS marts.mart_channel_retention RENAME TO mart_channel_retention_old;
+ALTER TABLE marts.mart_channel_retention_new RENAME TO mart_channel_retention;
+DROP TABLE IF EXISTS marts.mart_channel_retention_old;

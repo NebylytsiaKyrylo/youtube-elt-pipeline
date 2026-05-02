@@ -1,5 +1,4 @@
-DROP TABLE IF EXISTS marts.mart_channel_latest_videos;
-CREATE TABLE marts.mart_channel_latest_videos AS
+CREATE TABLE marts.mart_channel_latest_videos_new AS
 SELECT DISTINCT ON (dc.channel_key)
     dc.channel_name,
     dv.title AS latest_title,
@@ -12,3 +11,7 @@ WHERE dv.is_active = TRUE
 ORDER BY
     dc.channel_key ASC,
     dv.published_at DESC;
+
+ALTER TABLE IF EXISTS marts.mart_channel_latest_videos RENAME TO mart_channel_latest_videos_old;
+ALTER TABLE marts.mart_channel_latest_videos_new RENAME TO mart_channel_latest_videos;
+DROP TABLE IF EXISTS marts.mart_channel_latest_videos_old;

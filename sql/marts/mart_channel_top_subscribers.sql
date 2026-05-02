@@ -1,5 +1,4 @@
-DROP TABLE IF EXISTS marts.mart_channel_top_subscribers;
-CREATE TABLE marts.mart_channel_top_subscribers AS
+CREATE TABLE marts.mart_channel_top_subscribers_new AS
 SELECT
     dc.channel_name,
     dc.subscribers_count,
@@ -15,3 +14,7 @@ GROUP BY
     dc.subscribers_count
 ORDER BY
     dc.subscribers_count DESC;
+
+ALTER TABLE IF EXISTS marts.mart_channel_top_subscribers RENAME TO mart_channel_top_subscribers_old;
+ALTER TABLE marts.mart_channel_top_subscribers_new RENAME TO mart_channel_top_subscribers;
+DROP TABLE IF EXISTS marts.mart_channel_top_subscribers_old;
