@@ -4,11 +4,17 @@
 
 ## 1. Contexte du projet
 
-Une agence marketing française spécialisée dans la tech souhaite identifier les chaînes YouTube francophones les plus influentes dans le domaine technique — Data, IA, Développement Web, DevOps, Cybersécurité, Génie Logiciel — afin de conseiller ses clients sur leurs partenariats et leurs formats de contenu.
+Une agence marketing française spécialisée dans la tech souhaite identifier les chaînes YouTube francophones les plus influentes dans le domaine technique — Data, IA, Développement Web, DevOps, Cybersécurité — afin de conseiller ses clients sur leurs partenariats et leurs formats de contenu.
 
-L'agence fournit une liste curatée de chaînes (collectée manuellement, environ 40 chaînes, minimum 10 000 abonnés chacune). Les métadonnées des chaînes et des vidéos doivent être actualisées automatiquement chaque jour via l'API YouTube Data.
+L'agence fournit une liste curatée d'environ 40 chaînes (minimum 10 000 abonnés chacune). Les données doivent être actualisées automatiquement chaque jour via l'API YouTube Data.
 
-L'objectif final : **classer les chaînes et les vidéos pour alimenter des recommandations de partenariats**, en combinant engagement, rétention, taille d'audience, activité de publication et format vidéo. L'équipe data doit livrer un entrepôt analytique basé sur Postgres, des tables analytiques rafraîchies quotidiennement (marts), ainsi qu'une couche BI interactive pour démontrer les données sur des valeurs réelles.
+**Ce qui est demandé :**
+
+- Extraire quotidiennement les métadonnées et statistiques des chaînes et vidéos depuis l'API YouTube
+- Stocker les données brutes, puis les charger dans un entrepôt analytique structuré en couches
+- Livrer **10 tables analytiques rafraîchies chaque jour** (marts) pour alimenter les recommandations de partenariats
+- Garantir la qualité des données à chaque étape du pipeline
+- Exposer les résultats dans un outil BI interactif
 
 ---
 
@@ -24,7 +30,7 @@ L'équipe data doit livrer **10 tables analytiques rafraîchies quotidiennement*
 4. **Activité de publication** — qui est encore actif et depuis quand
 5. **Performance par format** — quelles durées de vidéo génèrent le meilleur engagement
 
-Chaque mart est reconstruit depuis zéro à chaque exécution (`DROP + CREATE TABLE AS`) à partir de la couche core de l'entrepôt. Les métriques sont calculées sur le dernier snapshot journalier.
+Chaque mart est reconstruit à chaque exécution via un atomic swap à partir de la couche core de l'entrepôt. Les métriques sont calculées sur le dernier snapshot journalier.
 
 ### Spécifications des marts
 
@@ -123,139 +129,3 @@ Chaque mart est décrit du point de vue de l'analyste data : question métier, d
 
 Un outil BI auto-hébergé doit exposer les marts dans des tableaux de bord interactifs, sur des données réelles issues du pipeline, afin de démontrer la valeur métier de bout en bout. Les tableaux de bord sont illustratifs — les marts constituent le contrat.
 
----
-
-## 3. Spécifications techniques
-
-### Architecture
-
-Le pipeline suit un flux **ELT** (Extract → Load → Transform) en quatre couches :
-
-```
-YouTube API → Stockage objet brut (JSON) → SQL staging → SQL core → SQL marts → BI
-```
-
-* **Couche brute (raw)** — fichiers JSON immuables dans un stockage objet compatible S3, un fichier par date d'extraction. Le pipeline doit être **rejouable** depuis n'importe quel fichier brut passé sans re-solliciter l'API.
-* **Couche staging** — miroir brut du JSON en SQL, toutes les colonnes typées `TEXT`, **tronquée et rechargée** à chaque exécution (full refresh).
-* **Couche core** — schéma en étoile typé et dédupliqué (Kimball) : deux dimensions et une table de faits. Source unique de vérité.
-* **Couche marts** — tables analytiques dénormalisées, **reconstruites depuis zéro** à chaque exécution (`DROP + CREATE TABLE AS`).
-
-### Modélisation des données
-
-* **`dim_channel`** — une ligne par chaîne. **SCD Type 1** : les attributs métier (nom, nombre d'abonnés) sont écrasés en cas de conflit. Aucun historique conservé — seul l'état courant compte.
-* **`dim_video`** — une ligne par vidéo. SCD Type 1 sur le titre et la durée. Implémente le **soft delete** : une vidéo absente de l'extraction du jour est marquée `is_active = FALSE` avec `deleted_at` renseigné, plutôt que physiquement supprimée. Une vidéo qui réapparaît est réactivée. Le soft delete préserve les lignes historiques de la table de faits référençant cette vidéo.
-* **`fct_video_daily_snapshot`** — **l'historique est conservé au niveau de la table de faits**. Grain : une ligne par `(video, snapshot_date)`. Clé primaire composite `(video_key, snapshot_date)`. Métriques journalières : vues, likes, commentaires. Les faits s'accumulent dans le temps ; rejouer la même date écrase uniquement les lignes de ce jour.
-* **Clés de substitution** (`SERIAL`) sur les dimensions pour la performance des jointures ; clés naturelles (`channel_id`, `video_id`) conservées en contraintes `UNIQUE`.
-* **Index :** `(channel_key, snapshot_date)` sur les faits pour les agrégations par chaîne ; index partiel sur `dim_video` `WHERE is_active = FALSE` pour les requêtes de soft delete.
-* **Colonnes techniques** sur chaque dimension : `dwh_loaded_at`, `dwh_updated_at`. Colonne technique sur les faits : `dwh_loaded_at NOT NULL`.
-
-### Stratégie de chargement
-
-| Couche | Stratégie | Justification |
-|---|---|---|
-| Brute (raw) | Ajout (un fichier par date) | Rejouabilité |
-| Staging | TRUNCATE + INSERT | Full refresh, aucune logique de conflit |
-| Core dims | UPSERT (`ON CONFLICT DO UPDATE`) | Préserve les clés de substitution entre les exécutions |
-| Core fact | INSERT avec mise à jour en conflit sur `(video_key, snapshot_date)` | Rejouer la même date est idempotent |
-| Marts | DROP + CREATE TABLE AS | Stratégie idempotente la plus simple |
-
-### Exigences non fonctionnelles
-
-* **Idempotence** — rejouer le pipeline sur la même date doit produire un état identique dans chaque couche.
-* **Rejouabilité** — n'importe quelle date passée peut être rechargée depuis le fichier brut sans re-solliciter l'API.
-* **Résilience** — l'échec d'une seule chaîne ne doit pas interrompre l'extraction globale ; le pipeline échoue uniquement si **toutes** les chaînes retournent vide.
-* **Respect du quota** — l'extraction doit respecter le quota quotidien de l'API YouTube avec une marge suffisante.
-* **Stack conteneurisée** — l'ensemble du système doit démarrer avec une seule commande sur n'importe quelle machine disposant de Docker.
-* **Secrets** — toutes les credentials doivent vivre dans des variables d'environnement, jamais dans le code source ni dans des fichiers versionnés.
-* **Observabilité** — logs structurés au niveau INFO à chaque étape clé ; notifications email en cas de succès et d'échec.
-* **Reproductibilité** — un clone frais + `.env` renseigné + `docker compose up` doit amener la stack à un état fonctionnel.
-
-### Orchestration
-
-* **Planifié quotidiennement** à une heure UTC fixe. `catchup=False` (pas de backfill historique).
-* **DAG linéaire** avec des portes qualité après chaque couche. Un échec de contrôle qualité **bloque** les tâches en aval.
-* **Retries par tâche** avec backoff exponentiel en cas d'échec transitoire.
-* **Timeout au niveau du DAG** pour éviter les exécutions bloquées.
-* **Dépendances câblées de sorte que la création des DDL s'exécute en parallèle** (une tâche par schéma de couche), et que **tous les marts s'exécutent en parallèle** à l'étape marts.
-
-### Qualité des données
-
-Des contrôles automatisés doivent s'exécuter comme **portes bloquantes** dans le DAG, après chaque couche de l'entrepôt :
-
-* **Porte staging** — sanité du volume de lignes (ratio aujourd'hui/hier), absence de nulls sur les champs obligatoires, absence de doublons sur `video_id`.
-* **Porte core** — nombre de lignes attendu par dimension, invariants métier sur les dimensions (`min(subscribers_count) >= 10k`, `dwh_updated_at >= dwh_loaded_at`), intégrité des faits (métriques non négatives, `likes <= views`, `comments <= views`, absence de doublon sur la clé composite, lignes présentes pour la date du jour, date de snapshot maximale égale à la date du jour).
-* **Porte marts** — `row_count > 0` pour chaque mart, bornes des scores (engagement `∈ [0, 2]`, rétention `∈ [0, 1]`, likes_rate `∈ [0, 1]`), deltas temporels non négatifs.
-
-### CI/CD
-
-Un workflow d'intégration continue doit s'exécuter à chaque push et pull request sur la branche principale :
-
-* Lint + vérification de format Python
-* Lint SQL
-* Tests unitaires
-
-La CI doit être verte avant tout merge.
-
-### Tests
-
-* **Tests unitaires** — couvrent le client API (HTTP mocké), l'extracteur (client mocké), la couche de stockage brut (S3 mocké) et le loader staging (SQL mocké). Exécutés en CI.
-* **Tests d'intégration** — couvrent le loader staging, les upserts core, le soft delete et les marts contre une vraie instance Postgres. Marqués avec un marker `pytest` pour pouvoir être exclus de la CI.
-* **Validation end-to-end** — déclenchement manuel du DAG sur une base vide confirme le flux complet, y compris les portes qualité et les notifications email.
-
-### Stack retenue
-
-| Domaine | Technologie |
-|---|---|
-| Langage | Python 3.12 |
-| Gestion des dépendances | uv |
-| Lint / format (Python) | ruff |
-| Lint (SQL) | sqlfluff |
-| Tests | pytest, pytest-cov |
-| Client HTTP | requests + urllib3 retry |
-| Stockage objet | MinIO (compatible S3, local) |
-| Entrepôt de données | PostgreSQL 17 |
-| ORM / exécution SQL | SQLAlchemy + psycopg2 + pandas (chargement staging) |
-| Orchestrateur | Apache Airflow 3.x (LocalExecutor) |
-| Qualité des données | Soda Core |
-| BI / tableaux de bord | Metabase |
-| Conteneurisation | Docker, Docker Compose |
-| CI | GitHub Actions |
-| Notifications | SMTP (templates HTML pour succès / échec) |
-
----
-
-## 4. Qualité des données & fiabilité
-
-### Objectif
-
-Garantir que les consommateurs en aval (tableaux de bord BI, parties prenantes métier) ne voient que des données ayant passé des contrôles d'intégrité automatisés. Un contrôle échoué doit remonter immédiatement via l'orchestrateur et via les alertes email.
-
-### Spécifications
-
-* **Couverture** — chaque couche de l'entrepôt (staging, core, marts) dispose de sa propre suite de contrôles. Aucune couche n'est exempte.
-* **Blocage** — les contrôles qualité sont des portes strictes dans le DAG. Un échec interrompt l'exécution et empêche la propagation de données corrompues vers les marts et les tableaux de bord.
-* **Catégories de contrôles par couche :**
-  * *Volume* — nombre de lignes, ratios aujourd'hui/hier.
-  * *Complétude* — absence de nulls sur les champs obligatoires, absence de doublons sur les clés métier.
-  * *Intégrité* — cohérence référentielle, ordre des timestamps techniques.
-  * *Invariants métier* — métriques non négatives, `likes <= views`, `comments <= views`, bornes des scores.
-  * *Fraîcheur* — les faits contiennent des lignes pour la date courante, la date de snapshot maximale est égale à la date d'exécution.
-* **Alerting** — un échec déclenche un email SMTP à l'équipe data avec les contrôles échoués et l'identifiant de l'exécution.
-* **Reproductibilité** — les contrôles sont versionnés en YAML aux côtés des transformations SQL.
-
----
-
-## 5. Documentation & reproductibilité
-
-### Objectif
-
-Un nouveau contributeur — ou le recruteur qui examine ce projet — doit pouvoir comprendre le projet, le reproduire localement et l'opérer sans contacter l'auteur.
-
-### Spécifications
-
-* **README** — `README.md` (français, principal) : présentation du projet, schéma d'architecture, tableau de la stack, démarrage rapide (`docker compose up`), résumé du modèle de données, structure du dépôt, badge CI.
-* **Décisions architecturales documentées** — chaque choix technique non évident (architecture en couches, soft delete, full refresh plutôt qu'incrémental, pourquoi MinIO, pourquoi Soda Core, pourquoi Airflow LocalExecutor, SCD Type 1 sur les dims avec historique sur les faits) expliqué avec sa justification dans `docs/decisions.md`.
-* **Conventions de nommage documentées** — `docs/naming_conventions.md` décrit les préfixes de colonnes, les préfixes de tables, les conventions de nommage des fichiers et l'organisation des schémas.
-* **Runbook opérationnel** — comment ajouter une chaîne, comment rejouer une date passée depuis le stockage brut, comment faire tourner les secrets, comment récupérer d'une exécution échouée.
-* **Preuves visuelles** — captures d'écran de la vue Graph d'Airflow, des tableaux de bord Metabase et de la console MinIO incluses dans le README.
-* **Hors périmètre, rendu explicite** — une section « Roadmap / Prochaines étapes » listant ce qui n'est intentionnellement pas construit (chargements incrémentaux, migration vers dbt, extraction via dlt, vrai cloud S3, déploiement Kubernetes, promotion multi-environnement).
